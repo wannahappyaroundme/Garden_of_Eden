@@ -19,7 +19,7 @@ enum PersonaType {
 
 /// API Configuration
 class ApiConfig {
-  static const String baseUrl = 'http://localhost:8000';  // Change for production
+  static const String baseUrl = 'http://192.168.219.109:8000';  // Local IP for device testing
   static const String chatEndpoint = '/api/v2/chat';
   static const String profileEndpoint = '/api/v2/profile';
   static const String sttEndpoint = '/api/v2/stt';

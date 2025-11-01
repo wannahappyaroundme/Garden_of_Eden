@@ -9,6 +9,14 @@ import '../utils/constants.dart';
 class ApiService {
   late final Dio _dio;
 
+  // Retry configuration
+  static const int maxRetries = 3;
+  static const List<Duration> retryDelays = [
+    Duration(seconds: 1),
+    Duration(seconds: 2),
+    Duration(seconds: 4),
+  ];
+
   ApiService() {
     _dio = Dio(BaseOptions(
       baseUrl: ApiConfig.baseUrl,
@@ -27,7 +35,54 @@ class ApiService {
     ));
   }
 
-  /// Send chat message to backend
+  /// Retry a request with exponential backoff
+  Future<T> _retryableRequest<T>({
+    required Future<T> Function() request,
+    Function(int attempt, Exception error)? onRetry,
+  }) async {
+    Exception? lastError;
+
+    for (int attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        return await request();
+      } on DioException catch (e) {
+        lastError = _handleDioError(e);
+
+        // Don't retry on client errors (4xx)
+        if (e.response?.statusCode != null &&
+            e.response!.statusCode! >= 400 &&
+            e.response!.statusCode! < 500) {
+          throw lastError;
+        }
+
+        // Last attempt - throw error
+        if (attempt == maxRetries - 1) {
+          throw lastError;
+        }
+
+        // Notify about retry
+        if (onRetry != null) {
+          onRetry(attempt + 1, lastError);
+        }
+
+        // Wait before retry
+        await Future.delayed(retryDelays[attempt]);
+      } catch (e) {
+        lastError = ApiException('알 수 없는 오류: $e');
+        if (attempt == maxRetries - 1) {
+          throw lastError;
+        }
+        if (onRetry != null) {
+          onRetry(attempt + 1, lastError);
+        }
+        await Future.delayed(retryDelays[attempt]);
+      }
+    }
+
+    throw lastError ?? ApiException('최대 재시도 횟수를 초과했습니다');
+  }
+
+  /// Send chat message to backend (with retry)
   Future<ChatResponse> sendChat({
     required String userId,
     required String message,
@@ -35,63 +90,63 @@ class ApiService {
     String? sessionId,
     File? audioFile,
     List<File>? cameraFrames,
+    Function(int attempt, Exception error)? onRetry,
   }) async {
-    try {
-      // Prepare form data
-      final formData = FormData.fromMap({
-        'user_id': userId,
-        'message': message,
-        'voice_type': voiceType.name,
-        if (sessionId != null) 'session_id': sessionId,
-      });
+    return _retryableRequest<ChatResponse>(
+      request: () async {
+        // Prepare form data
+        final formData = FormData.fromMap({
+          'user_id': userId,
+          'message': message,
+          'voice_type': voiceType.name,
+          if (sessionId != null) 'session_id': sessionId,
+        });
 
-      // Add audio file if provided
-      if (audioFile != null) {
-        formData.files.add(MapEntry(
-          'audio_file',
-          await MultipartFile.fromFile(
-            audioFile.path,
-            filename: 'audio.m4a',
-          ),
-        ));
-      }
-
-      // Add camera frames if provided
-      if (cameraFrames != null && cameraFrames.isNotEmpty) {
-        for (var frame in cameraFrames) {
+        // Add audio file if provided
+        if (audioFile != null) {
           formData.files.add(MapEntry(
-            'camera_frames',
+            'audio_file',
             await MultipartFile.fromFile(
-              frame.path,
-              filename: 'frame_${DateTime.now().millisecondsSinceEpoch}.jpg',
+              audioFile.path,
+              filename: 'audio.m4a',
             ),
           ));
         }
-      }
 
-      // Send request
-      final response = await _dio.post(
-        ApiConfig.chatEndpoint,
-        data: formData,
-      );
+        // Add camera frames if provided
+        if (cameraFrames != null && cameraFrames.isNotEmpty) {
+          for (var frame in cameraFrames) {
+            formData.files.add(MapEntry(
+              'camera_frames',
+              await MultipartFile.fromFile(
+                frame.path,
+                filename: 'frame_${DateTime.now().millisecondsSinceEpoch}.jpg',
+              ),
+            ));
+          }
+        }
 
-      // Parse response
-      return ChatResponse.fromJson(response.data as Map<String, dynamic>);
-    } on DioException catch (e) {
-      throw _handleDioError(e);
-    } catch (e) {
-      throw ApiException('알 수 없는 오류가 발생했습니다: $e');
-    }
+        // Send request
+        final response = await _dio.post(
+          ApiConfig.chatEndpoint,
+          data: formData,
+        );
+
+        // Parse response
+        return ChatResponse.fromJson(response.data as Map<String, dynamic>);
+      },
+      onRetry: onRetry,
+    );
   }
 
-  /// Get user profile
+  /// Get user profile (with retry)
   Future<UserProfile> getProfile(String userId) async {
-    try {
-      final response = await _dio.get('${ApiConfig.profileEndpoint}/$userId');
-      return UserProfile.fromJson(response.data as Map<String, dynamic>);
-    } on DioException catch (e) {
-      throw _handleDioError(e);
-    }
+    return _retryableRequest<UserProfile>(
+      request: () async {
+        final response = await _dio.get('${ApiConfig.profileEndpoint}/$userId');
+        return UserProfile.fromJson(response.data as Map<String, dynamic>);
+      },
+    );
   }
 
   /// Update user profile

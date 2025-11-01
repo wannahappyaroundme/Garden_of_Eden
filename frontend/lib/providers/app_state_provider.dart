@@ -12,6 +12,10 @@ class AppState {
   final ChatResponse? lastResponse;
   final String? errorMessage;
   final bool isTTSPlaying;
+  final int retryAttempt;
+  final String? loadingMessage;
+  final bool showPitfallWarning;
+  final String? pitfallMessage;
 
   AppState({
     this.mode = AppMode.idle,
@@ -19,6 +23,10 @@ class AppState {
     this.lastResponse,
     this.errorMessage,
     this.isTTSPlaying = false,
+    this.retryAttempt = 0,
+    this.loadingMessage,
+    this.showPitfallWarning = false,
+    this.pitfallMessage,
   });
 
   AppState copyWith({
@@ -27,8 +35,14 @@ class AppState {
     ChatResponse? lastResponse,
     String? errorMessage,
     bool? isTTSPlaying,
+    int? retryAttempt,
+    String? loadingMessage,
+    bool? showPitfallWarning,
+    String? pitfallMessage,
     bool clearError = false,
     bool clearResponse = false,
+    bool clearLoading = false,
+    bool clearPitfall = false,
   }) {
     return AppState(
       mode: mode ?? this.mode,
@@ -36,6 +50,10 @@ class AppState {
       lastResponse: clearResponse ? null : (lastResponse ?? this.lastResponse),
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       isTTSPlaying: isTTSPlaying ?? this.isTTSPlaying,
+      retryAttempt: retryAttempt ?? this.retryAttempt,
+      loadingMessage: clearLoading ? null : (loadingMessage ?? this.loadingMessage),
+      showPitfallWarning: clearPitfall ? false : (showPitfallWarning ?? this.showPitfallWarning),
+      pitfallMessage: clearPitfall ? null : (pitfallMessage ?? this.pitfallMessage),
     );
   }
 }
@@ -70,6 +88,29 @@ class AppStateNotifier extends StateNotifier<AppState> {
 
   void setTTSPlaying(bool playing) {
     state = state.copyWith(isTTSPlaying: playing);
+  }
+
+  void setRetryAttempt(int attempt) {
+    state = state.copyWith(retryAttempt: attempt);
+  }
+
+  void setLoadingMessage(String message) {
+    state = state.copyWith(loadingMessage: message);
+  }
+
+  void clearLoadingMessage() {
+    state = state.copyWith(clearLoading: true);
+  }
+
+  void showPitfall(String message) {
+    state = state.copyWith(
+      showPitfallWarning: true,
+      pitfallMessage: message,
+    );
+  }
+
+  void hidePitfall() {
+    state = state.copyWith(clearPitfall: true);
   }
 
   void reset() {
