@@ -1,0 +1,323 @@
+# 🌟 Project Eden V2
+
+**A J.A.R.V.I.S.-like AI Partner That Deeply Understands You**
+
+Version: 2.0.0 | Status: Backend Complete (Phase 1 ✅) | Next: Mobile App (Phase 2)
+
+---
+
+## What is Project Eden?
+
+Project Eden is NOT a chatbot. It's a **deeply personalized AI partner** that:
+
+- 🧠 **Learns who you are** over time (Am-muk-ji / 암묵지 - implicit knowledge)
+- 🎯 **Keeps you focused** on your "One Thing" (singular most important goal)
+- ⚠️ **Warns when you stray** through "Benevolent Dissent"
+- 💚 **Supports you emotionally** when you struggle
+- 🎭 **Adapts its personality** (Adam: logical/father-like, Eve: energetic/uplifting)
+- 📹 **Sees what you see** through camera integration
+- 🎤 **Listens to you** through voice-first interaction
+
+**This is J.A.R.V.I.S., not Siri.**
+
+---
+
+## Core Innovation: Am-muk-ji Learning System
+
+Traditional AI: Stores conversations
+**Eden V2**: **Learns you like a human mentor would**
+
+The AI builds a living profile with **weighted personality traits** (inspired by neural networks):
+- Traits observed frequently → weight increases (0.5 → 0.9)
+- Traits not reinforced recently → weight decays (0.8 → 0.6)
+- AI gets "smarter" about you over time
+
+Example traits tracked:
+- `perfectionist` (weight: 0.87)
+- `night_owl` (weight: 0.93)
+- `visual_learner` (weight: 0.76)
+- `stress_prone_when_uncertain` (weight: 0.69)
+
+---
+
+## Key Features
+
+### 1. Master Directive System
+
+Every AI response is filtered through:
+- ✅ Your user profile (Core Identity, One Thing, Core Pitfall)
+- ✅ Recent memory (last 10 conversations)
+- ✅ Current input (voice + camera + text)
+- ✅ Pitfall detection (alignment check)
+- ✅ Emotional state detection
+
+### 2. Benevolent Dissent
+
+When you ask about something that triggers your **Core Pitfall**, AI intervenes:
+
+**Example:**
+```
+User: "Should I learn SLAM algorithms?"
+AI (Adam): "잠깐만요. SLAM은 흥미로운 분야지만,
+           지금 당신의 One Thing인 SNU HCI Lab과 어떤 연결고리가 있나요?
+           이건 당신의 '능력 함정' 패턴으로 보입니다.
+           에너지가 분산되면 HCI 연구 준비에서 멀어질 수 있어요."
+```
+
+### 3. Dual Personas
+
+**Adam (아담)**
+- Male voice, logical, father-like
+- Uses questions to guide thinking
+- Direct but caring
+- Example: "먼저 생각해봅시다. 이 선택이 목표와 어떻게 연결되나요?"
+
+**Eve (이브)**
+- Female voice, energetic, uplifting
+- Celebrates and validates warmly
+- Makes you feel good naturally
+- Example: "와! 정말 대단한데요! 당신은 이미 충분히 잘하고 있어요!"
+
+### 4. Profile Evolution
+
+**Week 1**: Basic profile, AI asks questions
+**Week 4**: Patterns emerge, 5-7 traits discovered
+**Week 12**: Mature profile, AI "knows" you deeply
+**Month 6+**: J.A.R.V.I.S.-level partnership - predicts needs, intervenes proactively
+
+---
+
+## Technical Stack
+
+### Backend (✅ Phase 1 Complete)
+- **Framework**: FastAPI 0.109.2 (Python 3.12)
+- **Database**: AWS DynamoDB (NoSQL, free tier)
+- **LLM**: Google Gemini 1.5 Flash (FREE, vision support)
+- **STT**: Groq Whisper Large v3 (FREE, 14,400 req/day)
+- **TTS**: Edge TTS (FREE unlimited, Korean voices)
+- **Search**: DuckDuckGo (FREE)
+
+### Frontend (⏳ Phase 2 - Next)
+- **Framework**: Flutter 3.35.7+
+- **State**: Riverpod 3.0
+- **Platform**: iOS & Android (mobile-first)
+- **UI**: Voice-first with full-screen camera
+
+### Infrastructure
+- **Deployment**: Docker + AWS ECS/Fargate
+- **Storage**: AWS S3 for camera frames
+- **Monitoring**: CloudWatch
+- **Cost**: ~$15-45/month total
+
+---
+
+## Project Structure
+
+```
+myai/
+├── PROJECT_EDEN_V2_MASTER_SPEC.md    # Complete specification
+├── README.md                          # This file
+├── backend/                           # ✅ Phase 1 Complete
+│   ├── main.py                        # FastAPI app
+│   ├── services/                      # Core services
+│   │   ├── master_directive_processor.py
+│   │   ├── profile_learning_service.py
+│   │   ├── pitfall_detection_service.py
+│   │   ├── llm_gemini_v2.py
+│   │   ├── stt_service.py
+│   │   ├── tts_service.py
+│   │   └── dynamodb_service_v2.py
+│   ├── models/                        # Data models
+│   │   ├── user_profile.py
+│   │   ├── conversation.py
+│   │   └── api_schemas.py
+│   ├── prompts/                       # Master Directive prompts
+│   │   ├── master_directive.py
+│   │   └── learning_analysis.py
+│   ├── utils/                         # Utilities
+│   │   ├── logger.py
+│   │   └── constants.py
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   ├── requirements.txt
+│   └── README.md
+└── frontend/                          # ⏳ Phase 2 - To be built
+    └── (Flutter app structure)
+```
+
+---
+
+## Quick Start
+
+### Backend Setup
+
+```bash
+cd backend
+
+# Run setup script
+./setup.sh
+
+# Edit .env with your API keys
+nano .env
+
+# Create DynamoDB tables
+python -m services.dynamodb_service_v2
+
+# Run the server
+python main.py
+```
+
+Server runs at `http://localhost:8000`
+
+API docs: `http://localhost:8000/docs`
+
+### Get API Keys (All FREE)
+
+1. **Google Gemini**: https://ai.google.dev/
+2. **Groq (Whisper)**: https://console.groq.com/
+3. **AWS**: https://aws.amazon.com/ (Free tier: 25GB DynamoDB)
+
+---
+
+## API Example
+
+### Chat with AI
+
+```bash
+curl -X POST "http://localhost:8000/api/v2/chat" \
+  -F "user_id=user_123" \
+  -F "message=SNU HCI Lab에 가고 싶어요" \
+  -F "voice_type=adam"
+```
+
+**Response:**
+```json
+{
+  "conversation_id": "uuid",
+  "response_text": "SNU HCI Lab 진학이 목표시군요! 정말 멋진 목표예요...",
+  "response_audio_base64": "base64_mp3_data",
+  "pitfall_warning_triggered": false,
+  "emotional_support_mode": false,
+  "profile_updated": true,
+  "profile_version": 2,
+  "processing_time_ms": 1847
+}
+```
+
+---
+
+## Implementation Phases
+
+### ✅ Phase 1: Backend Core (Week 1) - **COMPLETE**
+- FastAPI with Master Directive system
+- DynamoDB service (3 tables)
+- Gemini LLM integration (vision support)
+- STT (Groq Whisper) + TTS (Edge TTS)
+- Profile learning with weight updates
+- Pitfall detection
+- Docker deployment
+
+### ⏳ Phase 2: Flutter Mobile App (Week 2) - **NEXT**
+- Voice-first UI with full-screen camera
+- Push-to-talk button
+- Persona toggle (Adam/Eve)
+- Response overlay with glassmorphism
+- Audio recording and playback
+- Camera service (1 FPS capture)
+
+### ⏳ Phase 3: Multimodal Integration (Week 3)
+- Voice + Camera working together
+- Keyframe selection (8 frames)
+- Image compression and upload
+- Visual context awareness
+
+### ⏳ Phase 4: Advanced Learning (Week 4-5)
+- Enhanced trait extraction
+- Emotional pattern analysis
+- Goal tracking and progress visualization
+
+---
+
+## Core Concept: The "One Thing"
+
+Every user has **ONE primary goal** that matters most.
+
+Examples:
+- "Get into SNU HCI Lab"
+- "Pass IELTS with 8.0"
+- "Launch my startup by June"
+- "Lose 15kg in 3 months"
+
+AI's mission: **Keep you focused on this goal** and warn when you're distracted.
+
+---
+
+## Master Directive Prompt (Simplified)
+
+```
+🌟 [Project Eden: Master Directive] 🌟
+
+[USER PROFILE]
+One Thing: SNU HCI Lab admission
+Core Pitfall: Competency Trap - energy scattering
+Top Traits: night_owl (0.93), perfectionist (0.87)
+
+[CURRENT INPUT]
+User: "Should I learn Rust?"
+
+[PITFALL CHECK]
+Topic: "Rust programming"
+Alignment with One Thing: 0.2 (WEAK)
+→ BENEVOLENT DISSENT ACTIVATED
+
+[RESPONSE]
+잠깐만요. Rust는 훌륭한 언어죠. 하지만
+지금 SNU HCI Lab 준비 중이시잖아요?
+Systems programming이 HCI 연구에 꼭 필요한가요?
+혹시 호기심 때문에 에너지가 분산되고 있는 건 아닐까요?
+```
+
+---
+
+## Why This Will Work
+
+1. **Personalization at scale**: Every user gets a unique AI that grows with them
+2. **Real value**: Helps achieve tangible goals (not just entertainment)
+3. **Emotional connection**: AI feels like it "knows" you
+4. **Mobile-first**: Voice and camera make it effortless
+5. **100% free core**: No API costs for MVP
+
+---
+
+## Current Status
+
+| Phase | Status | Progress |
+|-------|--------|----------|
+| Phase 1: Backend Core | ✅ Complete | 100% |
+| Phase 2: Mobile App | ⏳ Next | 0% |
+| Phase 3: Multimodal | ⏳ Pending | 0% |
+| Phase 4: Advanced Learning | ⏳ Pending | 0% |
+
+**Estimated completion of MVP**: 4 weeks (Phases 1-3)
+
+---
+
+## Documentation
+
+- **Master Specification**: [PROJECT_EDEN_V2_MASTER_SPEC.md](PROJECT_EDEN_V2_MASTER_SPEC.md)
+- **Backend README**: [backend/README.md](backend/README.md)
+- **API Docs**: http://localhost:8000/docs (when running)
+
+---
+
+## License
+
+Private project - Not for distribution
+
+---
+
+## Vision
+
+*"Project Eden is not a chatbot. It is a deeply personalized AI partner that understands you, learns from every interaction, and helps you achieve your One Thing while protecting you from distractions."*
+
+**This is just the beginning.** 🚀
