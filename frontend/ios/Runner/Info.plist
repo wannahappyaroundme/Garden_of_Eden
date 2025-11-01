@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>카메라를 사용하여 시각적 컨텍스트를 제공합니다</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>음성 대화를 위해 마이크가 필요합니다</string>
 </dict>
 </plist>
