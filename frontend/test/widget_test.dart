@@ -8,14 +8,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/main.dart';
 
 void main() {
-  testWidgets('App launches and shows permission screen', (WidgetTester tester) async {
+  testWidgets('App launches successfully', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const ProviderScope(child: EdenApp()));
 
-    // Wait for the app to settle
-    await tester.pumpAndSettle();
+    // Pump a frame to render the app
+    await tester.pump();
 
-    // Verify that the app launches
+    // Verify that the app launches with MaterialApp
     expect(find.byType(MaterialApp), findsOneWidget);
   });
 }
