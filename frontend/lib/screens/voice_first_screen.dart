@@ -9,9 +9,12 @@ import '../widgets/camera_view.dart';
 import '../widgets/persona_toggle.dart';
 import '../widgets/push_to_talk_button.dart';
 import '../widgets/response_overlay.dart';
+import '../widgets/loading_overlay.dart';
+import '../widgets/pitfall_warning_banner.dart';
 import '../providers/app_state_provider.dart';
 import '../providers/service_providers.dart';
 import '../utils/constants.dart';
+import '../utils/page_transitions.dart';
 
 class VoiceFirstScreen extends ConsumerStatefulWidget {
   final String userId;
@@ -65,6 +68,7 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
       final appState = ref.read(appStateProvider.notifier);
 
       appState.setMode(AppMode.listening);
+      appState.setLoadingMessage('녹음 중...');
 
       // Start audio recording
       await audioService.startRecording();
@@ -74,6 +78,7 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
     } catch (e) {
       _showError('녹음 시작 실패: $e');
       ref.read(appStateProvider.notifier).setMode(AppMode.idle);
+      ref.read(appStateProvider.notifier).clearLoadingMessage();
     }
   }
 
@@ -86,30 +91,48 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
       final currentState = ref.read(appStateProvider);
 
       // Stop recording
+      appState.setLoadingMessage('음성을 처리하는 중...');
       final audioFile = await audioService.stopRecording();
       final cameraFrames = await cameraService.stopAndGetKeyframes();
 
       if (audioFile == null) {
         _showError('녹음 파일이 없습니다');
         appState.setMode(AppMode.idle);
+        appState.clearLoadingMessage();
         return;
       }
 
       // Set processing mode
       appState.setMode(AppMode.processing);
+      appState.setLoadingMessage('AI가 생각하는 중...');
+      appState.setRetryAttempt(0);
 
       // Transcribe audio (optional - backend will do this)
       // For now, we'll send empty message and let backend transcribe
       final message = ''; // Backend will transcribe from audio
 
-      // Send to backend
+      // Send to backend with retry callback
       final response = await apiService.sendChat(
         userId: widget.userId,
         message: message,
         voiceType: currentState.persona,
         cameraFrames: cameraFrames,
         audioFile: audioFile,
+        onRetry: (attempt, error) {
+          // Update retry state
+          appState.setRetryAttempt(attempt);
+          appState.setLoadingMessage('재시도 중... ($attempt/3)');
+        },
       );
+
+      // Clear loading
+      appState.clearLoadingMessage();
+      appState.setRetryAttempt(0);
+
+      // Check for pitfall warning
+      if (response.pitfallWarningTriggered) {
+        appState.showPitfall('주의: One Thing에서 벗어나고 있습니다!');
+      }
 
       // Update state with response
       appState.setLastResponse(response);
@@ -133,7 +156,10 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
       await _cleanupTempFiles([audioFile, ...cameraFrames]);
     } catch (e) {
       _showError('오류: $e');
-      ref.read(appStateProvider.notifier).setMode(AppMode.idle);
+      final appState = ref.read(appStateProvider.notifier);
+      appState.setMode(AppMode.idle);
+      appState.clearLoadingMessage();
+      appState.setRetryAttempt(0);
     }
   }
 
@@ -168,9 +194,35 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
           // 1. Full-screen camera view
           CameraView(controller: cameraService.controller),
 
-          // 2. Persona toggle (top center)
+          // 2. Top navigation bar
           Positioned(
-            top: 60,
+            top: 50,
+            left: 16,
+            right: 16,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Profile button
+                IconButton(
+                  icon: const Icon(Icons.person, color: Colors.white, size: 28),
+                  onPressed: () {
+                    AppNavigation.toProfile(context, widget.userId);
+                  },
+                ),
+                // Settings button
+                IconButton(
+                  icon: const Icon(Icons.settings, color: Colors.white, size: 28),
+                  onPressed: () {
+                    AppNavigation.toSettings(context);
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          // 3. Persona toggle (top center)
+          Positioned(
+            top: 110,
             left: 0,
             right: 0,
             child: PersonaToggle(
@@ -181,7 +233,7 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
             ),
           ),
 
-          // 3. Push-to-talk button (center)
+          // 4. Push-to-talk button (center)
           Center(
             child: PushToTalkButton(
               mode: appState.mode,
@@ -190,7 +242,7 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
             ),
           ),
 
-          // 4. Response overlay (bottom 1/3)
+          // 5. Response overlay (bottom 1/3)
           if (appState.lastResponse != null)
             ResponseOverlay(
               response: appState.lastResponse?.responseText,
@@ -199,6 +251,27 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
                 ref.read(appStateProvider.notifier).clearResponse();
                 ref.read(appStateProvider.notifier).setMode(AppMode.idle);
               },
+            ),
+
+          // 6. Loading overlay (full screen)
+          if (appState.loadingMessage != null)
+            LoadingOverlay(
+              message: appState.loadingMessage!,
+              retryAttempt: appState.retryAttempt > 0 ? appState.retryAttempt : null,
+            ),
+
+          // 7. Pitfall warning banner (top)
+          if (appState.showPitfallWarning && appState.pitfallMessage != null)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: PitfallWarningBanner(
+                message: appState.pitfallMessage!,
+                onDismiss: () {
+                  ref.read(appStateProvider.notifier).hidePitfall();
+                },
+              ),
             ),
         ],
       ),
