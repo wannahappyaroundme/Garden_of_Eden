@@ -2467,13 +2467,1228 @@ pandoc SIMULATOR_TESTING.md -o SIMULATOR_TESTING.pdf
 
 ---
 
-**이제 시작하세요!** 🚀
+---
+
+## 📱 Part 9: 실제 기기 테스트 (iPhone & Galaxy)
+
+### 왜 실제 기기 테스트가 필요한가?
+
+**시뮬레이터/에뮬레이터의 한계:**
+- iOS 시뮬레이터: 음성 녹음/카메라 작동 안 함
+- Android 에뮬레이터: 성능/하드웨어 정확도 낮음
+- 실제 사용자 경험과 차이 있음
+
+**실제 기기에서만 테스트 가능:**
+- ✅ 실제 마이크 녹음 품질
+- ✅ 실제 카메라 화질 및 성능
+- ✅ 배터리 소모
+- ✅ 네트워크 환경 (LTE/5G/Wi-Fi)
+- ✅ 실제 하드웨어 성능
+- ✅ 제조사별 차이점 (Samsung, Apple)
+
+---
+
+### 9.1 iPhone 실제 기기 테스트 (USB 연결)
+
+#### 준비물
+
+```
+하드웨어:
+✅ iPhone 13 이상 또는 iPhone SE 3세대
+✅ USB-C to Lightning 케이블 (또는 USB-C to USB-C for iPhone 15+)
+✅ Mac (Apple Silicon 또는 Intel)
+
+소프트웨어:
+✅ Xcode 15+ 설치됨
+✅ iOS 15+ (iPhone)
+✅ Flutter 3.35.7+
+```
+
+---
+
+#### Step 1: iPhone 준비 및 연결
+
+**1.1 개발자 모드 활성화 (iOS 16+ 필수)**
+
+```
+iPhone에서:
+1. 설정 앱 열기
+2. 개인정보 보호 및 보안 → 개발자 모드
+3. 개발자 모드 스위치 켜기
+4. iPhone 재시동 (자동 프롬프트)
+5. 재시동 후 "개발자 모드 켜기" 다시 확인
+6. iPhone 암호 입력하여 확인
+```
+
+**iOS 15 이하:**
+- 개발자 모드 설정 불필요
+- USB 연결 후 바로 신뢰 가능
+
+---
+
+**1.2 USB 케이블로 Mac 연결**
+
+```
+1. iPhone을 USB 케이블로 Mac에 연결
+
+2. iPhone에 팝업 표시:
+   "이 컴퓨터를 신뢰하시겠습니까?"
+
+3. [신뢰] 탭
+
+4. iPhone 암호(또는 Face ID/Touch ID) 입력
+
+5. Mac에서 확인:
+```
 
 ```bash
-# Android 에뮬레이터로 빠른 시작
-~/Library/Android/sdk/emulator/emulator -avd Pixel_7_API_33 &
+# 터미널에서 확인
+flutter devices
+
+# 출력 예시:
+# iPhone 15 Pro (mobile) • 00008030-001A2B3C4D5E001F • ios • iOS 17.0.1
+```
+
+---
+
+**1.3 Xcode에서 기기 확인 (선택사항)**
+
+```bash
+# Xcode 열기
+open -a Xcode
+
+# 또는 메뉴:
+# Xcode → Window → Devices and Simulators (⌘ + Shift + 2)
+```
+
+**Devices 탭에서 확인:**
+```
+왼쪽 사이드바:
+✅ iPhone 15 Pro
+   - iOS 17.0.1
+   - Identifier: 00008030-001A2B3C4D5E001F
+   - Status: Connected (초록색 점)
+
+문제 발생 시:
+⚠️ Status: Unavailable
+   → iPhone 잠금 해제
+   → "신뢰" 재확인
+   → 케이블 재연결
+```
+
+---
+
+#### Step 2: Flutter 앱 배포 및 실행
+
+**2.1 기기 ID 확인**
+
+```bash
 cd /Users/kyungsbook/Desktop/myai/frontend
+
+# 연결된 기기 목록
+flutter devices
+
+# 출력:
+# 3 connected devices:
+#
+# iPhone 15 Pro (mobile) • 00008030-001A2B3C4D5E001F • ios • iOS 17.0.1
+# iPhone 16e (mobile)    • AF123456-7890-ABCD-EF12-34567890ABCD • ios • com.apple.CoreSimulator.SimRuntime.iOS-17-0 (simulator)
+# sdk gphone64 arm64 (mobile) • emulator-5554 • android-arm64 • Android 13 (API 33) (emulator)
+```
+
+**실제 iPhone 구분:**
+- `(mobile)` + `ios` + `iOS 17.0.1` (시뮬레이터 아님)
+- Device ID: 실제 하드웨어 UUID (00008030-...)
+
+---
+
+**2.2 앱 실행**
+
+```bash
+# 방법 1: Device ID로 직접 실행 (추천)
+flutter run -d 00008030-001A2B3C4D5E001F
+
+# 방법 2: flutter run 후 선택
 flutter run
+
+# 프롬프트:
+# Multiple devices found:
+# [1]: iPhone 15 Pro (00008030-001A2B3C4D5E001F)
+# [2]: iPhone 16e (simulator)
+# [3]: sdk gphone64 arm64 (emulator)
+# Please choose one (or "q" to quit): 1
+
+# 빌드 시작 (최초 2-3분 소요)
+```
+
+**빌드 과정:**
+```
+Launching lib/main.dart on iPhone 15 Pro in debug mode...
+Running pod install...                                      2,341ms
+Running Xcode build...
+ └─Compiling, linking and signing...                      45.3s
+Xcode build done.                                          48.2s
+Syncing files to device iPhone 15 Pro...                   234ms
+
+Flutter run key commands.
+r Hot reload. 🔥🔥🔥
+R Hot restart.
+h List all available interactive commands.
+d Detach (terminate "flutter run" but leave application running).
+c Clear the screen
+q Quit (terminate the application on the device).
+
+A Dart VM Service on iPhone 15 Pro is available at:
+http://127.0.0.1:50123/abc123def456/
+```
+
+---
+
+**2.3 앱 설치 확인**
+
+**iPhone 홈 화면에서:**
+```
+1. 앱 아이콘 확인:
+   - 이름: "Eden" (또는 "frontend")
+   - 기본 Flutter 아이콘 또는 커스텀 아이콘
+
+2. 앱 탭하여 실행 가능
+   - Hot reload 중이면 터미널 연결 유지
+   - Hot reload 종료 후에도 앱 독립 실행 가능
+```
+
+**설정에서 확인:**
+```
+iPhone 설정 → 일반 → VPN 및 기기 관리 (또는 프로파일 및 기기 관리)
+→ 개발자 앱 섹션
+→ [Apple ID 이메일] 확인
+→ Eden 앱 나열됨
+```
+
+---
+
+#### Step 3: 권한 부여 및 테스트
+
+**3.1 최초 실행 시 권한 프롬프트**
+
+```
+앱 실행 순서:
+
+1. 앱 시작 → PermissionScreen 표시
+
+2. [카메라와 마이크 권한 허용하기] 버튼 탭
+
+3. 시스템 권한 다이얼로그 (순차적):
+
+   첫 번째 다이얼로그:
+   "Eden"이(가) 카메라에 접근하려고 합니다
+   [ 허용 안 함 ]  [ 확인 ]
+   → [확인] 탭
+
+   두 번째 다이얼로그:
+   "Eden"이(가) 마이크에 접근하려고 합니다
+   [ 허용 안 함 ]  [ 확인 ]
+   → [확인] 탭
+
+4. 권한 부여 완료 → VoiceFirstScreen으로 자동 이동
+```
+
+---
+
+**3.2 전체 멀티모달 플로우 테스트**
+
+```
+=== 완전한 End-to-End 테스트 ===
+
+1. VoiceFirstScreen 확인:
+   ✅ 전체 화면 카메라 프리뷰 (실제 iPhone 후면 카메라)
+   ✅ 중앙 하단: 푸시-투-톡 버튼 (파란색 마이크)
+   ✅ 상단: Adam/Eve 토글
+   ✅ 왼쪽 상단: 프로필 아이콘 (👤)
+   ✅ 오른쪽 상단: 설정 아이콘 (⚙️)
+
+2. 백엔드 서버 실행 확인:
+   터미널 새 탭:
+   cd /Users/kyungsbook/Desktop/myai/backend
+   ./start_local.sh
+
+   확인:
+   ✅ Backend server started successfully!
+   ✅ Server: http://192.168.1.100:8000
+
+3. iPhone에서 마이크 버튼 길게 누르기:
+   ✅ 버튼 색상: 파란색 → 빨간색
+   ✅ 버튼 크기 증가
+   ✅ 파동 애니메이션 시작
+   ✅ 카메라 1 FPS 자동 캡처 시작
+
+4. iPhone 마이크에 대고 말하기 (5-8초):
+   "안녕하세요, Adam. 오늘 SNU HCI Lab 연구 계획서를 작성하고 있어요."
+
+   진행 상황:
+   ✅ 매 1초마다 키프레임 캡처 (최대 8개)
+   ✅ 오디오 녹음 중
+   ✅ Logger: "Capturing keyframe 1/8", "2/8", ...
+
+5. 버튼 놓기:
+   ✅ 녹음 종료
+   ✅ 로딩 오버레이 표시: "AI가 응답을 준비하고 있어요..."
+   ✅ 백엔드 전송 (오디오 + 키프레임)
+
+6. 백엔드 처리 (2-4초):
+   ✅ STT: Groq Whisper (음성 → 텍스트)
+   ✅ 프로필 로드
+   ✅ Master Directive 실행
+   ✅ Gemini LLM 응답 생성
+   ✅ Edge TTS 생성 (Adam 음성)
+
+7. 응답 수신:
+   ✅ 로딩 오버레이 숨김
+   ✅ 응답 오버레이 표시 (글래스모피즘)
+   ✅ 응답 텍스트: "좋아요! SNU HCI Lab 연구 계획서 작성은..."
+   ✅ TTS 자동 재생 (Adam 남성 목소리)
+
+8. TTS 재생 중 (10-20초):
+   ✅ iPhone 스피커로 음성 출력
+   ✅ 텍스트 스크롤 가능
+   ✅ 재생 완료 후 오버레이 자동 사라짐 (3초 후)
+
+9. 다음 대화 준비:
+   ✅ 푸시-투-톡 버튼 다시 활성화
+   ✅ 카메라 프리뷰 계속 표시
+
+전체 플로우 시간: 약 20-30초
+```
+
+---
+
+**3.3 세부 기능 테스트**
+
+**카메라 테���트:**
+```
+1. 후면 카메라 프리뷰:
+   ✅ 실시간 영상 표시
+   ✅ 조명 변화에 따른 자동 노출 조정
+   ✅ 해상도: 1920x1080 또는 설정값
+
+2. 카메라 전환 (코드에서 지원 시):
+   ✅ 전면/후면 카메라 전환
+
+3. 1 FPS 키프레임 캡처:
+   ✅ 매 1초마다 JPEG 이미지 저장
+   ✅ 8초 녹음 = 8개 키프레임
+   ✅ 파일 크기: ~100-300 KB/프레임
+```
+
+**오디오 테스트:**
+```
+1. 녹음 품질:
+   ✅ iPhone 마이크 (하단 또는 상단)
+   ✅ 샘플레이트: 44100 Hz (고품질)
+   ✅ 인코더: AAC-LC
+   ✅ 배경 소음 필터링 (iOS 자동)
+
+2. 재생 품질:
+   ✅ iPhone 스피커
+   ✅ Edge TTS 한국어 음성 (InJoonNeural/SunHiNeural)
+   ✅ 볼륨 조절 (설정 화면)
+   ✅ AirPods/Bluetooth 스피커 지원
+```
+
+**권한 테스트:**
+```
+1. 권한 거부 후 재요청:
+   설정 → Eden → 권한 → 카메라/마이크 끄기
+   → 앱 재실행
+   → 에러 메시지 표시
+   → [설정 열기] 버튼 탭
+   → 권한 수동 허용
+
+2. 런타임 권한 취소:
+   앱 실행 중 → 설정에서 권한 끄기
+   → 앱 돌아오기
+   → 카메라 프리뷰 중단
+   → 버튼 탭 시 에러 스낵바
+```
+
+---
+
+#### Step 4: 디버깅 및 로그 확인
+
+**4.1 Flutter 로그 (터미널)**
+
+```bash
+# flutter run 실행 중인 터미널에서 실시간 로그 확인
+
+# 필터링된 로그만 보기
+flutter logs | grep -E "Logger|Error|Exception"
+
+# 전체 로그
+flutter logs
+
+# 로그 파일로 저장
+flutter logs > iphone_test.log
+```
+
+**로그 예시:**
+```
+🔍 DEBUG: Camera initialized: back camera
+📷 Capturing keyframe 1/8
+📷 Capturing keyframe 2/8
+🎙️ Recording started
+🎙️ Recording stopped: /path/to/audio.m4a
+🌐 API call: POST /api/v2/chat, status: 200, duration: 2847ms
+🔊 Playing audio from base64
+✅ Audio playback completed
+```
+
+---
+
+**4.2 Xcode Console (상세 로그)**
+
+```bash
+# Xcode 열기
+open ios/Runner.xcworkspace
+
+# Xcode에서:
+# 1. 상단 툴바: iPhone 15 Pro 선택
+# 2. Product → Run (⌘ + R)
+# 3. 하단 Console 영역 확인
+
+# Console에서:
+# - Flutter 로그
+# - iOS 시스템 로그
+# - 네이티브 플러그인 로그
+# - 에러 스택 트레이스
+```
+
+---
+
+**4.3 iPhone 디바이스 로그**
+
+```bash
+# iPhone 시스템 로그 보기 (Xcode)
+# Xcode → Window → Devices and Simulators
+# iPhone 15 Pro 선택 → Open Console
+
+# 필터: "Eden" 또는 "flutter"
+
+# 또는 명령어:
+idevicesyslog | grep Eden
+```
+
+---
+
+#### Step 5: 성능 프로파일링
+
+**5.1 Flutter DevTools**
+
+```bash
+# flutter run 후 출력된 URL 복사:
+# The Flutter DevTools debugger and profiler is available at:
+# http://127.0.0.1:9100?uri=http://127.0.0.1:50123/abc123def456/
+
+# 브라우저에서 열기
+open http://127.0.0.1:9100?uri=http://127.0.0.1:50123/abc123def456/
+```
+
+**DevTools 기능:**
+```
+1. Performance 탭:
+   ✅ FPS 측정 (목표: 60 FPS)
+   ✅ Frame rendering time
+   ✅ GPU/CPU 사용량
+
+2. Memory 탭:
+   ✅ 메모리 사용량 (목표: < 200 MB)
+   ✅ 메모리 누수 감지
+   ✅ 힙 스냅샷
+
+3. Network 탭:
+   ✅ API 호출 로그
+   ✅ 요청/응답 크기
+   ✅ 응답 시간
+
+4. Logging 탭:
+   ✅ Logger 출력
+   ✅ 에러 로그
+   ✅ 필터링 및 검색
+```
+
+---
+
+**5.2 Xcode Instruments**
+
+```bash
+# Xcode에서:
+# Product → Profile (⌘ + I)
+# Instruments 앱 실행됨
+
+# 템플릿 선택:
+# - Time Profiler: CPU 사용량
+# - Allocations: 메모리 할당
+# - Leaks: 메모리 누수
+# - Energy Log: 배터리 소모
+
+# Record 버튼 (빨간 점) 클릭
+# → iPhone에서 앱 사용
+# → Stop (사각형) 클릭
+# → 분석 결과 확인
+```
+
+---
+
+#### Step 6: 문제 해결 (iPhone)
+
+**문제 1: "Developer Mode Required"**
+
+```
+증상:
+iPhone에 "개발자 모드가 필요합니다" 메시지
+
+해결:
+1. 설정 → 개인정보 보호 및 보안 → 개발자 모드
+2. 개발자 모드 켜기
+3. iPhone 재시동
+4. "개발자 모드 켜기" 재확인 + 암호 입력
+```
+
+---
+
+**문제 2: "Trust This Computer?"가 안 뜸**
+
+```
+증상:
+USB 연결했는데 신뢰 프롬프트 없음
+
+해결:
+1. iPhone 잠금 해제
+2. 케이블 재연결
+3. 다른 USB 포트 시도
+4. 케이블 교체 (충전 전용 vs 데이터 케이블)
+5. Mac 재시작
+```
+
+---
+
+**문제 3: "No provisioning profiles found"**
+
+```
+증상:
+Xcode build failed: Signing for "Runner" requires a development team
+
+해결:
+1. Xcode에서 ios/Runner.xcworkspace 열기
+2. Runner 프로젝트 선택 (왼쪽)
+3. Signing & Capabilities 탭
+4. Team: [Apple ID 선택] (자동으로 Personal Team 생성됨)
+5. Bundle Identifier 변경 (고유해야 함):
+   com.example.frontend → com.yourname.eden
+6. Automatically manage signing ✅ 체크
+7. flutter clean && flutter run
+```
+
+---
+
+**문제 4: "The device is locked"**
+
+```
+증상:
+Could not install application: The device is locked.
+
+해결:
+1. iPhone 잠금 해제
+2. flutter run 재시도
+```
+
+---
+
+**문제 5: 앱이 설치되었는데 실행 안 됨**
+
+```
+증상:
+빌드 성공했는데 앱 탭하면 즉시 종료
+
+해결:
+1. iPhone 설정 → 일반 → VPN 및 기기 관리
+2. [Apple ID] 선택
+3. "Eden" 앱 → [신뢰] 탭
+4. 확인 다이얼로그 → [신뢰] 탭
+5. 앱 재실행
+```
+
+---
+
+### 9.2 Galaxy (Android) 실제 기기 테스트 (USB 연결)
+
+#### 준비물
+
+```
+하드웨어:
+✅ Samsung Galaxy S21 이상 또는 Pixel 6 이상
+✅ USB-C to USB-C 케이블 (또는 USB-C to USB-A)
+✅ Mac (Apple Silicon 또는 Intel)
+
+소프트웨어:
+✅ Android Studio 설치됨
+✅ Android 11+ (Galaxy)
+✅ Flutter 3.35.7+
+✅ ADB (Android Debug Bridge)
+```
+
+---
+
+#### Step 1: Galaxy 준비 및 연결
+
+**1.1 개발자 옵션 활성화**
+
+```
+Galaxy에서:
+
+1. 설정 앱 열기
+
+2. 휴대전화 정보 (맨 아래)
+
+3. 소프트웨어 정보
+
+4. "빌드 번호" 7번 연속 탭
+   (탭할 때마다 "개발자 모드까지 n단계 남음" 메시지)
+
+5. "개발자 모드가 사용 설정되었습니다" 토스트 메시지
+
+6. 뒤로 가기 → 설정 메인
+   → 개발자 옵션 메뉴 새로 생김 (일반 섹션 하단)
+```
+
+---
+
+**1.2 USB 디버깅 활성화**
+
+```
+Galaxy에서:
+
+1. 설정 → 개발자 옵션
+
+2. 개발자 옵션 스위치 켜기 (맨 위)
+
+3. USB 디버깅 스위치 켜기
+   (디버깅 섹션)
+
+4. 경고 다이얼로그:
+   "USB 디버깅을 허용하시겠습니까?"
+   → [확인]
+
+선택사항 (성능 향상):
+5. USB 구성 → MTP (미디어 전송 프로토콜)
+6. 애니메이션 배율 → 0.5x (또는 끄기)
+```
+
+---
+
+**1.3 USB 케이블로 Mac 연결**
+
+```
+1. Galaxy를 USB 케이블로 Mac에 연결
+
+2. Galaxy 알림:
+   "USB 디버깅 허용"
+
+   "이 컴퓨터에서 USB 디버깅을 허용하시겠습니까?"
+
+   RSA 키 지문:
+   AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD
+
+   [이 컴퓨터에서 항상 허용] ✅ 체크 (권장)
+
+   [취소] [확인]
+   → [확인] 탭
+
+3. Mac 터미널에서 확인:
+```
+
+```bash
+# ADB로 기기 확인
+adb devices
+
+# 출력:
+# List of devices attached
+# RF8R1234ABC    device
+
+# "device" = 연결 성공
+# "unauthorized" = Galaxy에서 아직 승인 안 함
+# "offline" = 연결 불안정
+```
+
+---
+
+**1.4 Flutter에서 기기 확인**
+
+```bash
+cd /Users/kyungsbook/Desktop/myai/frontend
+
+flutter devices
+
+# 출력:
+# 3 connected devices:
+#
+# SM G991N (mobile)       • RF8R1234ABC • android-arm64 • Android 13 (API 33)
+# sdk gphone64 arm64 (mobile) • emulator-5554 • android-arm64 • Android 13 (API 33) (emulator)
+# iPhone 16e (mobile)     • UUID-9012 • ios • iOS 17.0 (simulator)
+```
+
+**실제 Galaxy 구분:**
+- `(mobile)` + `android-arm64` + `Android 13 (API 33)` (에뮬레이터 아님)
+- Device ID: 실제 하드웨어 시리얼 (RF8R...)
+- 모델명: SM G991N (Galaxy S21) 등
+
+---
+
+#### Step 2: Flutter 앱 배포 및 실행
+
+**2.1 앱 실행**
+
+```bash
+# 방법 1: Device ID로 직접 실행
+flutter run -d RF8R1234ABC
+
+# 방법 2: flutter run 후 선택
+flutter run
+
+# 프롬프트:
+# Multiple devices found:
+# [1]: SM G991N (RF8R1234ABC)
+# [2]: sdk gphone64 arm64 (emulator-5554)
+# [3]: iPhone 16e (simulator)
+# Please choose one (or "q" to quit): 1
+
+# 빌드 시작 (최초 2-5분 소요)
+```
+
+**빌드 과정:**
+```
+Launching lib/main.dart on SM G991N in debug mode...
+Running Gradle task 'assembleDebug'...
+✓ Built build/app/outputs/flutter-apk/app-debug.apk (45.2 MB)
+Installing build/app/outputs/flutter-apk/app-debug.apk...        1,234ms
+
+Flutter run key commands.
+r Hot reload.
+R Hot restart.
+h List all available interactive commands.
+d Detach (terminate "flutter run" but leave application running).
+c Clear the screen
+q Quit (terminate the application on the device).
+
+A Dart VM Service on SM G991N is available at:
+http://127.0.0.1:40123/xyz789uvw012/
+```
+
+---
+
+**2.2 앱 설치 확인**
+
+**Galaxy 홈 화면/앱 드로어에서:**
+```
+1. 앱 아이콘 확인:
+   - 이름: "Eden" (또는 "frontend")
+   - 기본 Flutter 아이콘 또는 커스텀 아이콘
+
+2. 앱 탭하여 실행 가능
+   - Hot reload 중이면 터미널 연결 유지
+   - 독립적으로 실행 가능
+```
+
+**ADB로 확인:**
+```bash
+# 설치된 앱 확인
+adb shell pm list packages | grep frontend
+
+# 출력:
+# package:com.example.frontend
+
+# 앱 정보
+adb shell dumpsys package com.example.frontend | head -20
+```
+
+---
+
+#### Step 3: 권한 부여 및 테스트
+
+**3.1 최초 실행 시 권한 프롬프트**
+
+```
+앱 실행 순서:
+
+1. 앱 시작 → PermissionScreen 표시
+
+2. [카메라와 마이크 권한 허용하기] 버튼 탭
+
+3. 시스템 권한 다이얼로그 (순차적):
+
+   첫 번째 다이얼로그:
+   "Eden이 사진 및 동영상을 촬영하도록 허용하시겠어요?"
+   [ 앱 사용 중에만 허용 ]
+   [ 이번만 허용 ]
+   [ 허용 안 함 ]
+   → [앱 사용 중에만 허용] 탭 (권장)
+
+   두 번째 다이얼로그:
+   "Eden이 오디오를 녹음하도록 허용하시겠어요?"
+   [ 앱 사용 중에만 허용 ]
+   [ 이번만 허용 ]
+   [ 허용 안 함 ]
+   → [앱 사용 중에만 허용] 탭
+
+4. 권한 부여 완료 → VoiceFirstScreen으로 자동 이동
+```
+
+---
+
+**3.2 전체 멀티모달 플로우 테스트**
+
+```
+=== Galaxy에서 완전한 End-to-End 테스트 ===
+
+1. VoiceFirstScreen 확인:
+   ✅ 전체 화면 카메라 프리뷰 (Galaxy 후면 카메라)
+   ✅ 중앙 하단: 푸시-투-톡 버튼 (파란색 마이크)
+   ✅ 상단: Adam/Eve 토글
+   ✅ 왼쪽 상단: 프로필 아이콘
+   ✅ 오른쪽 상단: 설정 아이콘
+
+2. 백엔드 서버 확인 (동일)
+
+3. Galaxy에서 마이크 버튼 길게 누르기:
+   ✅ 버튼 애니메이션 시작
+   ✅ 카메라 1 FPS 자동 캡처
+
+4. Galaxy 마이크에 대고 말하기 (5-8초):
+   "안녕, Eve! 오늘 기분이 좋아요!"
+
+   진행:
+   ✅ 오디오 녹음 (하단 마이크)
+   ✅ 키프레임 캡처 (1 FPS)
+
+5. 버튼 놓기:
+   ✅ 로딩 오버레이
+   ✅ 백엔드 전송
+
+6. 백엔드 처리 (2-4초)
+
+7. 응답 수신:
+   ✅ 응답 오버레이 (글래스모피즘)
+   ✅ TTS 재생 (Eve 여성 목소리)
+   ✅ Galaxy 스피커 출력
+
+8. 다음 대화 준비
+
+전체 플로우 시간: 약 20-30초
+```
+
+---
+
+**3.3 Galaxy 특화 기능 테스트**
+
+**카메라 품질 (삼성 고해상도):**
+```
+Galaxy S21/S22/S23:
+✅ 후면 카메라: 64MP (또는 108MP)
+✅ Flutter에서 다운샘플링: 1920x1080
+✅ 우수한 저조도 성능
+✅ 빠른 AF (자동 초점)
+```
+
+**오디오 품질:**
+```
+Galaxy 마이크:
+✅ 다중 마이크 (노이즈 캔슬링)
+✅ 샘플레이트: 44100 Hz 지원
+✅ 고품질 AAC 인코딩
+```
+
+**Samsung One UI 특성:**
+```
+알림:
+- 권한 요청 시 One UI 스타일 다이얼로그
+- 알림 패널에서 앱 상태 확인 가능
+
+배터리 최적화:
+- 설정 → 배터리 → 백그라운드 사용 제한 → Eden 예외 추가 (선택)
+```
+
+---
+
+#### Step 4: 디버깅 및 로그 확인
+
+**4.1 ADB Logcat (실시간 로그)**
+
+```bash
+# 전체 로그
+adb logcat
+
+# Flutter 앱 로그만 필터링
+adb logcat | grep flutter
+
+# 에러만 표시
+adb logcat *:E
+
+# 특정 태그 필터
+adb logcat -s Eden
+
+# 로그 저장
+adb logcat > galaxy_test.log
+```
+
+**로그 예시:**
+```
+11-04 05:30:12.345 12345 12346 I flutter : 🔍 DEBUG: Camera initialized
+11-04 05:30:13.456 12345 12346 I flutter : 📷 Capturing keyframe 1/8
+11-04 05:30:14.567 12345 12346 I flutter : 🎙️ Recording started
+11-04 05:30:19.678 12345 12346 I flutter : 🎙️ Recording stopped: 5.2s
+11-04 05:30:21.789 12345 12346 I flutter : 🌐 API call: POST /api/v2/chat
+11-04 05:30:24.890 12345 12346 I flutter : 🔊 Playing audio from base64
+```
+
+---
+
+**4.2 Flutter DevTools (동일)**
+
+```bash
+# flutter run 후 출력된 URL 브라우저에서 열기
+open http://127.0.0.1:9100?uri=http://127.0.0.1:40123/xyz789uvw012/
+```
+
+---
+
+**4.3 Android Studio Logcat (GUI)**
+
+```
+Android Studio 열기:
+1. View → Tool Windows → Logcat
+2. Device 선택: SM G991N (RF8R1234ABC)
+3. Package 선택: com.example.frontend
+4. Log level: Verbose
+
+필터 추가:
+- Tag: flutter
+- Message: 정규식 검색 가능
+```
+
+---
+
+#### Step 5: 성능 프로파일링
+
+**5.1 Flutter DevTools (동일)**
+
+**5.2 Android Studio Profiler**
+
+```
+Android Studio:
+1. View → Tool Windows → Profiler
+2. Device 선택: SM G991N
+3. Process 선택: com.example.frontend
+
+프로파일링:
+- CPU: CPU 사용량 및 스레드
+- Memory: 메모리 할당 및 힙
+- Network: API 호출 및 데이터 전송
+- Energy: 배터리 소모
+```
+
+---
+
+**5.3 Galaxy 개발자 옵션 (성능 모니터링)**
+
+```
+Galaxy에서:
+설정 → 개발자 옵션
+
+성능 모니터링:
+✅ GPU 렌더링 프로파일 작성 → 화면에 막대 그래프로 표시
+✅ GPU 뷰 업데이트 표시 → 화면 업데이트 시 깜빡임
+✅ 레이아웃 경계 표시 → UI 구조 확인
+✅ 프로파일 GPU 렌더링 → adb shell dumpsys gfxinfo
+
+FPS 확인:
+- 목표: 60 FPS (16.67ms/프레임)
+- 초록색 선 아래 유지
+```
+
+---
+
+#### Step 6: 문제 해결 (Galaxy)
+
+**문제 1: "USB 디버깅 허용" 안 뜸**
+
+```
+해결:
+1. Galaxy 잠금 해제
+2. USB 케이블 재연결
+3. USB 디버깅 껐다 다시 켜기
+4. 다른 USB 포트 시도
+5. 케이블 교체
+6. adb kill-server && adb start-server
+```
+
+---
+
+**문제 2: adb devices에서 "unauthorized"**
+
+```
+해결:
+1. Galaxy 알림 패널 확인
+2. "USB 디버깅 허용" 탭
+3. [확인] 탭
+4. adb devices 재확인
+```
+
+---
+
+**문제 3: "Offline" 상태**
+
+```
+해결:
+1. USB 케이블 품질 확인 (데이터 전송 가능한 케이블)
+2. USB 포트 변경
+3. adb kill-server && adb start-server
+4. Galaxy 재부팅
+5. Mac 재부팅
+```
+
+---
+
+**문제 4: 빌드 느림 (Gradle)**
+
+```
+해결:
+1. Android Studio → Preferences → Build, Execution, Deployment
+   → Compiler → Command-line Options:
+   --parallel --max-workers=4
+
+2. android/gradle.properties 추가:
+   org.gradle.jvmargs=-Xmx4096m
+   org.gradle.parallel=true
+   org.gradle.caching=true
+
+3. flutter clean && flutter pub get
+```
+
+---
+
+**문제 5: 권한 에러**
+
+```
+증상:
+Camera/Microphone permission denied
+
+해결:
+1. Galaxy 설정 → 앱 → Eden
+2. 권한 → 카메라/마이크 허용
+3. 앱 재시작
+
+또는 ADB:
+adb shell pm grant com.example.frontend android.permission.CAMERA
+adb shell pm grant com.example.frontend android.permission.RECORD_AUDIO
+```
+
+---
+
+### 9.3 기기 비교 테스트
+
+#### iPhone vs Galaxy 기능 비교
+
+| 기능 | iPhone 15 Pro | Galaxy S23 | 비고 |
+|------|--------------|-----------|------|
+| **카메라 화질** | ⭐⭐⭐⭐⭐ (48MP) | ⭐⭐⭐⭐⭐ (200MP) | 둘 다 우수 |
+| **오디오 녹음** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | iPhone 약간 우수 |
+| **TTS 재생** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | 스피커 품질 차이 |
+| **빌드 속도** | ⭐⭐⭐⭐ (45초) | ⭐⭐⭐ (2-3분) | Gradle 느림 |
+| **Hot Reload** | ⭐⭐⭐⭐⭐ (즉시) | ⭐⭐⭐⭐⭐ (즉시) | 동일 |
+| **성능** | ⭐⭐⭐⭐⭐ (A17 Pro) | ⭐⭐⭐⭐⭐ (Snapdragon 8 Gen 2) | 거의 동일 |
+| **배터리 효율** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Galaxy 약간 우수 |
+| **UI 일관성** | ⭐⭐⭐⭐⭐ (iOS 통일) | ⭐⭐⭐⭐ (One UI 변형) | iOS 더 일관적 |
+
+---
+
+#### 동시 테스트 워크플로우
+
+```
+=== 크로스 플랫폼 테스트 ===
+
+1. 두 기기 모두 Mac에 USB 연결
+
+2. 기기 확인:
+   flutter devices
+
+   # 출력:
+   # iPhone 15 Pro (mobile) • 00008030-... • ios
+   # SM G991N (mobile)      • RF8R1234ABC • android-arm64
+
+3. 터미널 탭 2개 사용:
+
+   탭 1 (iPhone):
+   flutter run -d 00008030-001A2B3C4D5E001F
+
+   탭 2 (Galaxy):
+   flutter run -d RF8R1234ABC
+
+4. 동시에 동일한 대화 테스트:
+   - iPhone: "안녕, Adam!"
+   - Galaxy: "안녕, Adam!"
+
+5. 응답 비교:
+   - 텍스트 동일한지
+   - TTS 음성 동일한지
+   - 응답 시간 차이
+   - UI 표시 차이
+
+6. 버그 발견 시:
+   - 어느 플랫폼에서 발생했는지 기록
+   - 로그 저장 (flutter logs > platform_bug.log)
+   - 재현 단계 문서화
+```
+
+---
+
+### 9.4 실제 기기 테스트 체크리스트
+
+```
+=== iPhone 테스트 ===
+✅ USB 연결 및 신뢰
+✅ 개발자 모드 활성화
+✅ flutter run 성공
+✅ 앱 설치 확인
+✅ 카메라 권한 허용
+✅ 마이크 권한 허용
+✅ 카메라 프리뷰 작동
+✅ 음성 녹음 (5초+)
+✅ 1 FPS 키프레임 캡처 (8개)
+✅ 백엔드 전송 성공
+✅ TTS 재생 (Adam/Eve)
+✅ 페르소나 전환 (Adam ↔ Eve)
+✅ 프로필 화면 확인
+✅ 설정 화면 확인
+✅ Pitfall warning 트리거
+✅ Emotional support 모드
+✅ 오프라인 모드 (캐시)
+✅ 앱 재시작 후 설정 유지
+✅ Hot reload 테스트
+✅ DevTools 프로파일링
+✅ 배터리 소모 측정
+✅ 메모리 사용량 (<200 MB)
+
+=== Galaxy 테스트 ===
+✅ USB 연결 및 디버깅 허용
+✅ 개발자 옵션 활성화
+✅ flutter run 성공
+✅ 앱 설치 확인
+✅ 카메라 권한 허용
+✅ 마이크 권한 허용
+✅ 카메라 프리뷰 작동
+✅ 음성 녹음 (5초+)
+✅ 1 FPS 키프레임 캡처 (8개)
+✅ 백엔드 전송 성공
+✅ TTS 재생 (Adam/Eve)
+✅ 페르소나 전환
+✅ 프로필 화면 확인
+✅ 설정 화면 확인
+✅ Pitfall warning 트리거
+✅ Emotional support 모드
+✅ 오프라인 모드
+✅ 앱 재시작 후 설정 유지
+✅ Hot reload 테스트
+✅ DevTools 프로파일링
+✅ 배터리 소모 측정
+✅ 메모리 사용량 (<200 MB)
+
+=== 크로스 플랫폼 ===
+✅ UI 일관성 확인
+✅ 동일한 대화에 동일한 응답
+✅ 성능 차이 측정
+✅ 버그 플랫폼별 확인
+✅ 폰트/색상 차이 없음
+✅ 애니메이션 동일
+✅ 권한 처리 동일
+```
+
+---
+
+### 9.5 빠른 참조 명령어
+
+```bash
+# === iPhone ===
+
+# 기기 확인
+flutter devices | grep ios
+
+# 앱 실행
+flutter run -d <iphone-device-id>
+
+# 로그
+flutter logs | grep Logger
+
+# Xcode에서 기기 확인
+open -a Xcode
+# Window → Devices and Simulators
+
+# === Galaxy ===
+
+# 기기 확인
+adb devices
+flutter devices | grep android
+
+# 앱 실행
+flutter run -d <android-device-id>
+
+# 로그
+adb logcat | grep flutter
+
+# 권한 부여
+adb shell pm grant com.example.frontend android.permission.CAMERA
+adb shell pm grant com.example.frontend android.permission.RECORD_AUDIO
+
+# 앱 삭제
+adb uninstall com.example.frontend
+
+# 스크린샷
+adb shell screencap -p /sdcard/screenshot.png
+adb pull /sdcard/screenshot.png
+
+# === 공통 ===
+
+# 빌드 정리
+flutter clean
+flutter pub get
+
+# Hot reload (앱 실행 중)
+r
+
+# Hot restart
+R
+
+# 종료
+q
+```
+
+---
+
+**이제 실제 iPhone과 Galaxy로 테스트하세요!** 📱🚀
+
+```bash
+# 1. 두 기기 모두 USB 연결
+# 2. 터미널 탭 2개 열기
+# 3. 백엔드 서버 실행
+cd backend && ./start_local.sh
+
+# 4. iPhone 테스트
+cd frontend
+flutter run -d <iphone-id>
+
+# 5. Galaxy 테스트 (새 탭)
+cd frontend
+flutter run -d <android-id>
+
+# 6. 동시에 대화 테스트!
 ```
 
 **즐거운 테스팅 되세요!** 🎉
