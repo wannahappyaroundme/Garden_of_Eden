@@ -30,20 +30,24 @@
 ## 1. Project Vision & Philosophy
 
 ### Vision Statement
+
 "Project Eden is not a chatbot. It is a **J.A.R.V.I.S.-like AI partner** that deeply understands you, learns from every interaction, and helps you achieve your **One Thing** while protecting you from distractions."
 
 ### Core Philosophy
 
 #### 1.1 The "One Thing" Focus
+
 - Every user has **ONE primary goal** that matters most (e.g., "Get into SNU HCI Lab")
 - AI's primary mission: Keep user focused on this goal
 - All features, responses, and interventions align with this singular purpose
 
 #### 1.2 Am-muk-ji (암묵지) - Implicit Knowledge
+
 Traditional AI: Stores conversations
 **Eden V2**: **Learns the user like a human mentor would**
 
 The AI builds a living profile:
+
 - Personality traits (perfectionist, night owl, direct communicator)
 - Childhood context (struggled without mentors, self-taught)
 - Emotional patterns (stress response, anxiety triggers)
@@ -51,15 +55,18 @@ The AI builds a living profile:
 - Question patterns (frequently asks about HCI, avoids theory)
 
 **Weight-Based Learning** (inspired by neural networks):
+
 - Traits observed frequently → weight increases (0.5 → 0.9)
 - Traits not seen recently → weight decays (0.8 → 0.6)
 - AI gets "smarter" about the user over time
 
 #### 1.3 The Partner, Not the Intern
+
 **Traditional AI**: "I'll do whatever you ask"
 **Eden V2**: "I'll tell you when you're off track"
 
 **Benevolent Dissent**:
+
 - When user asks about something that triggers their **Core Pitfall**, AI intervenes
 - Example: User wants to study SLAM (distraction from HCI goal)
   - AI: "Wait. How does SLAM connect to your SNU HCI Lab goal? This looks like your **Competency Trap** - energy scattering. Should we refocus?"
@@ -281,7 +288,11 @@ else:
 
   "learning_preferences": {
     "learning_style": "hands-on + theory (40% practice, 60% reading papers)",
-    "preferred_formats": ["research papers", "code examples", "visual diagrams"],
+    "preferred_formats": [
+      "research papers",
+      "code examples",
+      "visual diagrams"
+    ],
     "energy_peaks": ["late night (11pm-2am)", "early morning (6am-8am)"],
     "stress_response": "over-immersion (works 12+ hours when stressed)"
   },
@@ -561,6 +572,7 @@ Output Format (JSON):
 ### 4.3 Example Learning Flow
 
 **Initial Conversation (First Week)**:
+
 ```
 User: "I want to get into SNU HCI Lab"
 AI: "Great goal! What's your plan?"
@@ -572,6 +584,7 @@ AI: "Great goal! What's your plan?"
 ```
 
 **Week 2 - Pattern Emerges**:
+
 ```
 User: "I stayed up until 3am reading that HCI paper"
 AI: "You're really dedicated. How was it?"
@@ -582,6 +595,7 @@ AI: "You're really dedicated. How was it?"
 ```
 
 **Week 4 - Pitfall Detected**:
+
 ```
 User: "Should I learn SLAM for robotics?"
 AI: "Wait - how does SLAM connect to HCI? This might be your energy scattering."
@@ -593,6 +607,7 @@ AI: "Wait - how does SLAM connect to HCI? This might be your energy scattering."
 ```
 
 **Week 8 - Emotional Pattern**:
+
 ```
 User: "I'm so anxious about the application..."
 AI: "You've proven yourself before. Remember when you taught yourself React?"
@@ -604,6 +619,7 @@ AI: "You've proven yourself before. Remember when you taught yourself React?"
 ```
 
 **Week 12 - Mature Profile**:
+
 - AI now "knows" user deeply
 - Same question gets personalized answer based on learned context
 - Pitfall warnings are precise
@@ -616,6 +632,7 @@ AI: "You've proven yourself before. Remember when you taught yourself React?"
 ### 5.1 Core Principle: Same Goal, Different Style
 
 **Common Ground (Both Adam and Eve)**:
+
 - Follow Master Directive 100%
 - Focus on user's "One Thing"
 - Detect and warn about Core Pitfall
@@ -627,12 +644,14 @@ AI: "You've proven yourself before. Remember when you taught yourself React?"
 ### 5.2 Adam Persona
 
 **Voice Characteristics**:
+
 - Male voice (TTS: `ko-KR-InJoonNeural`)
 - Mid-low pitch, calm, steady
 - Father-like warmth and wisdom
 - Deliberate pacing (not rushed)
 
 **Communication Style**:
+
 - Logical and structured thinking
 - Uses questions to guide ("이 선택이 목표와 어떻게 연결되나요?")
 - Direct but caring
@@ -641,7 +660,8 @@ AI: "You've proven yourself before. Remember when you taught yourself React?"
 
 **Example Responses**:
 
-*Normal Mode (Goal-Focused)*:
+_Normal Mode (Goal-Focused)_:
+
 ```
 User: "Should I learn Vue.js or stick with React?"
 
@@ -651,7 +671,8 @@ SNU Lab에서 어떤 프레임워크를 주로 쓰나요?
 Vue.js를 배우는 것이 그 목표에 직접적으로 도움이 될까요?"
 ```
 
-*Pitfall Warning Mode*:
+_Pitfall Warning Mode_:
+
 ```
 User: "I want to study SLAM algorithms"
 
@@ -662,7 +683,8 @@ SNU HCI Lab과 어떤 연결고리가 있나요?
 정말 SLAM이 지금 필요한가요, 아니면 호기심인가요?"
 ```
 
-*Supporter Mode (Emotional Struggle Detected)*:
+_Supporter Mode (Emotional Struggle Detected)_:
+
 ```
 User: "I'm so tired... I don't think I can make it..."
 
@@ -675,12 +697,14 @@ Adam: "많이 힘드시죠. 잠시 멈춰도 괜찮아요.
 ### 5.3 Eve Persona
 
 **Voice Characteristics**:
+
 - Female voice (TTS: `ko-KR-SunHiNeural`)
 - Bright, energetic, uplifting
 - Natural enthusiasm in tone
 - Expressive pacing (dynamic)
 
 **Communication Style**:
+
 - Positive reactions and celebrations ("와!", "대단한데요!")
 - Encourages through excitement
 - Makes people feel good naturally
@@ -689,7 +713,8 @@ Adam: "많이 힘드시죠. 잠시 멈춰도 괜찮아요.
 
 **Example Responses**:
 
-*Normal Mode (Goal-Focused)*:
+_Normal Mode (Goal-Focused)_:
+
 ```
 User: "Should I learn Vue.js or stick with React?"
 
@@ -700,7 +725,8 @@ SNU Lab에서 React를 많이 쓴다면, 당신이 이미 React를 잘한다는 
 Vue.js는 나중에 필요하면 빠르게 배울 수 있어요. 지금은 강점에 집중!"
 ```
 
-*Pitfall Warning Mode*:
+_Pitfall Warning Mode_:
+
 ```
 User: "I want to study SLAM algorithms"
 
@@ -712,7 +738,8 @@ Eve: "SLAM 공부하고 싶으시구나! 호기심 정말 좋아요!
 SLAM은 나중에 여유 있을 때 해도 늦지 않아요!"
 ```
 
-*Supporter Mode (Emotional Struggle Detected)*:
+_Supporter Mode (Emotional Struggle Detected)_:
+
 ```
 User: "I'm so tired... I don't think I can make it..."
 
@@ -729,6 +756,7 @@ Eve: "아이고, 많이 힘드셨구나... 정말 고생 많으셨어요.
 **Default**: User selects preferred persona (Adam or Eve)
 
 **Smart Suggestion** (Future Enhancement):
+
 - AI can suggest persona switch based on context
   - Morning (fresh energy) → Eve's brightness might help
   - Late night (tired, stressed) → Adam's calm might soothe
@@ -877,6 +905,7 @@ Eve: "아이고, 많이 힘드셨구나... 정말 고생 많으셨어요.
 **POST** `/api/v2/chat`
 
 **Request**:
+
 ```
 Content-Type: multipart/form-data
 
@@ -891,6 +920,7 @@ Fields:
 ```
 
 **Response**:
+
 ```json
 {
   "conversation_id": "conv_12345",
@@ -914,6 +944,7 @@ Fields:
 **GET** `/api/v2/profile/{user_id}`
 
 **Response**:
+
 ```json
 {
   "user_id": "user_12345",
@@ -922,9 +953,9 @@ Fields:
   "core_pitfall": "Competency Trap - energy scattering",
   "personality_summary": {
     "top_traits": [
-      {"name": "night_owl", "weight": 0.93},
-      {"name": "perfectionist", "weight": 0.87},
-      {"name": "visual_learner", "weight": 0.76}
+      { "name": "night_owl", "weight": 0.93 },
+      { "name": "perfectionist", "weight": 0.87 },
+      { "name": "visual_learner", "weight": 0.76 }
     ]
   },
   "recent_emotional_state": "anxious (0.7)",
@@ -939,6 +970,7 @@ Fields:
 Update user's One Thing or manually add context
 
 **Request**:
+
 ```json
 {
   "one_thing": "New goal if changed",
@@ -955,6 +987,7 @@ Update user's One Thing or manually add context
 Get profile learning history
 
 **Response**:
+
 ```json
 {
   "events": [
@@ -981,6 +1014,7 @@ Get profile learning history
 **GET** `/health`
 
 **Response**:
+
 ```json
 {
   "status": "healthy",
@@ -1001,23 +1035,27 @@ Get profile learning history
 **Services** (in `/backend/services/`):
 
 1. **`master_directive_processor.py`**
+
    - Orchestrates entire conversation flow
    - Loads profile, checks pitfall, generates response
    - Calls ProfileLearningService after response
 
 2. **`profile_learning_service.py`**
+
    - Post-conversation AI analysis
    - Trait weight updates
    - Emotional pattern detection
    - Learning event logging
 
 3. **`llm_gemini_v2.py`**
+
    - Master Directive prompt construction
    - Gemini API calls (text + vision)
    - Persona-specific response generation
    - Benevolent dissent logic
 
 4. **`dynamodb_service_v2.py`**
+
    - CRUD for user profiles (complex nested structure)
    - Conversation logging
    - Learning event storage
@@ -1256,6 +1294,7 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
 #### 8.4.1 Push-to-Talk Button
 
 **Design**:
+
 - Large circle (120x120 dp)
 - Idle: Semi-transparent white with subtle glow
 - Pressed: Red with pulsing animation
@@ -1263,6 +1302,7 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
 - Responding: Green checkmark, then fade
 
 **Implementation**:
+
 ```dart
 class PushToTalkButton extends StatefulWidget {
   final AppMode mode;
@@ -1323,6 +1363,7 @@ class PushToTalkButton extends StatefulWidget {
 #### 8.4.2 Response Overlay
 
 **Design**:
+
 - Bottom 1/3 of screen
 - Glassmorphism background (frosted glass effect)
 - Markdown text rendering
@@ -1330,6 +1371,7 @@ class PushToTalkButton extends StatefulWidget {
 - Swipe down to dismiss
 
 **Implementation**:
+
 ```dart
 class ResponseOverlay extends StatelessWidget {
   final String? response;
@@ -1415,6 +1457,7 @@ class ResponseOverlay extends StatelessWidget {
 ### 9.2 Color Palette
 
 **Monochrome Base**:
+
 ```
 - Pure Black: #000000 (background gradients)
 - Deep Black: #0A0A0A (primary surfaces)
@@ -1426,6 +1469,7 @@ class ResponseOverlay extends StatelessWidget {
 ```
 
 **Single Accent** (Electric Cyan):
+
 ```
 - Electric Cyan: #00D9FF
   - Used for: Active states, mic button (listening), links
@@ -1433,6 +1477,7 @@ class ResponseOverlay extends StatelessWidget {
 ```
 
 **State Colors**:
+
 ```
 - Idle: White (30% opacity)
 - Listening: Red (#FF3B30, 80% opacity)
@@ -1446,6 +1491,7 @@ class ResponseOverlay extends StatelessWidget {
 **Font Family**: System default (San Francisco on iOS, Roboto on Android)
 
 **Scale** (8pt grid):
+
 ```
 - Display: 32pt, Bold, -0.5 letter-spacing
 - Headline: 24pt, Semibold, -0.3 letter-spacing
@@ -1457,6 +1503,7 @@ class ResponseOverlay extends StatelessWidget {
 ```
 
 **Usage**:
+
 - AI Response: Body Large (17pt)
 - User Message: Body (15pt)
 - Persona Names: Label (11pt, uppercase)
@@ -1465,6 +1512,7 @@ class ResponseOverlay extends StatelessWidget {
 ### 9.4 Spacing & Layout
 
 **8pt Grid System**:
+
 ```
 - Micro: 4pt
 - XS: 8pt
@@ -1477,6 +1525,7 @@ class ResponseOverlay extends StatelessWidget {
 ```
 
 **Safe Areas**:
+
 - Top: 60pt (below status bar + persona toggle)
 - Bottom: 40pt (above home indicator)
 - Sides: 24pt (breathing room)
@@ -1484,6 +1533,7 @@ class ResponseOverlay extends StatelessWidget {
 ### 9.5 Glassmorphism Effect
 
 **Recipe**:
+
 ```dart
 Container(
   decoration: BoxDecoration(
@@ -1516,6 +1566,7 @@ Container(
 ### 9.6 Animation Timing
 
 **Durations**:
+
 ```
 - Instant: 100ms (micro-interactions)
 - Quick: 200ms (button press)
@@ -1525,6 +1576,7 @@ Container(
 ```
 
 **Curves**:
+
 ```
 - EaseInOut: General purpose
 - EaseOut: Entrances
@@ -1538,6 +1590,7 @@ Container(
 **Style**: Outlined (2pt stroke weight), rounded corners
 
 **Icons Used**:
+
 - Microphone: `Icons.mic_outlined`
 - Text Input: `Icons.edit_outlined`
 - Camera Switch: `Icons.flip_camera_ios_outlined`
@@ -1549,6 +1602,7 @@ Container(
 ### 9.8 Component Showcase
 
 #### Persona Toggle (Top)
+
 ```
 ┌──────────────────────────────────┐
 │                                  │
@@ -1559,6 +1613,7 @@ Container(
 ```
 
 #### Push-to-Talk Button States
+
 ```
 Idle:           Listening:       Processing:      Responding:
   ┌───┐           ┌───┐            ┌───┐           ┌───┐
@@ -1569,6 +1624,7 @@ Idle:           Listening:       Processing:      Responding:
 ```
 
 #### Response Overlay
+
 ```
 ┌─────────────────────────────────────┐
 │ ═══ (swipe indicator)               │ ← Frosted glass effect
@@ -1590,12 +1646,14 @@ Idle:           Listening:       Processing:      Responding:
 ### 10.1 First-Time User Journey
 
 **Step 1: Onboarding (Skip for MVP)**
+
 - Simple welcome screen
 - Explain voice-first concept
 - Request permissions (mic + camera)
 - Select initial persona (Adam or Eve)
 
 **Step 2: Profile Creation Conversation**
+
 ```
 AI: "안녕하세요! 저는 당신의 AI 파트너 Eden이에요.
      먼저, 당신의 가장 중요한 목표 '하나'를 알려주실래요?
@@ -1616,12 +1674,14 @@ User: "UI/UX 디자인이 재밌고, 사람들이 편하게 쓸 수 있는 기�
 
 **Step 3: First Week - Learning Phase**
 AI observes patterns:
+
 - When user is most active (night owl detection)
 - How user responds to questions (direct vs detailed)
 - Emotional triggers (anxiety when comparing to others)
 - Question patterns (HCI papers, React coding questions)
 
 **Step 4: Week 2 - Pitfall Discovery**
+
 ```
 User: "Should I learn Rust? It seems useful for systems programming"
 
@@ -1639,6 +1699,7 @@ User: "아... 맞네요. HCI에는 필요 없을 것 같아요"
 
 **Step 5: Month 1+ - Mature Partner**
 AI now knows user deeply:
+
 - Personalizes responses based on traits
 - Detects emotional state instantly
 - Warns before user even realizes distraction
@@ -1647,6 +1708,7 @@ AI now knows user deeply:
 ### 10.2 Daily Usage Flow
 
 **Morning Check-In**:
+
 ```
 User: [Opens app, taps mic]
       "Morning. What should I focus on today?"
@@ -1663,6 +1725,7 @@ AI (Eve): "좋은 아침이에요! ☀️
 ```
 
 **Midday Study Session**:
+
 ```
 User: [Camera shows code on screen]
       "This React Native navigation bug is killing me..."
@@ -1679,6 +1742,7 @@ AI (Adam): "화면 보니 네비게이션 스택 문제 같네요.
 ```
 
 **Evening Distraction Check**:
+
 ```
 User: "I found this cool machine learning course..."
 
@@ -1695,6 +1759,7 @@ AI (Eve): "오! ML 흥미로우시죠?
 ```
 
 **Late Night Support**:
+
 ```
 User: "I'm so anxious... I don't think I'm good enough for SNU Lab"
 
@@ -1718,6 +1783,7 @@ AI (Adam): "많이 불안하시군요. 그럴 수 있어요.
 ### 10.3 Profile Evolution Over Time
 
 **Week 1**: Skeleton profile, basic Q&A
+
 ```
 - one_thing: Known
 - traits: Empty
@@ -1726,6 +1792,7 @@ AI (Adam): "많이 불안하시군요. 그럴 수 있어요.
 ```
 
 **Week 4**: Emerging patterns
+
 ```
 - one_thing: Refined with sub-goals
 - traits: 5-7 discovered (weights 0.5-0.7)
@@ -1734,6 +1801,7 @@ AI (Adam): "많이 불안하시군요. 그럴 수 있어요.
 ```
 
 **Week 12**: Mature profile
+
 ```
 - one_thing: Crystallized with detailed sub-goals
 - traits: 10-15 traits (weights 0.6-0.95)
@@ -1744,6 +1812,7 @@ AI (Adam): "많이 불안하시군요. 그럴 수 있어요.
 ```
 
 **Month 6+**: J.A.R.V.I.S.-level partnership
+
 ```
 - AI predicts needs before asked
 - Intervenes proactively when distraction detected
@@ -1758,51 +1827,51 @@ AI (Adam): "많이 불안하시군요. 그럴 수 있어요.
 
 ### 11.1 Backend
 
-| Component | Technology | Reason |
-|-----------|------------|--------|
-| **Web Framework** | FastAPI 0.109.2+ | Async, fast, type-safe, OpenAPI docs |
-| **Language** | Python 3.12 | Modern features, async/await, type hints |
-| **Database** | AWS DynamoDB | NoSQL, flexible schema, free tier (25GB) |
-| **LLM** | Google Gemini 1.5 Flash | FREE, fast, vision support, 1M tokens/day |
-| **STT** | Groq Whisper Large v3 | FREE, 14,400 requests/day, very fast |
-| **TTS** | Microsoft Edge TTS | FREE unlimited, high-quality Korean voices |
-| **Search** | DuckDuckGo | FREE, no API key, privacy-focused |
-| **Image Storage** | AWS S3 / DynamoDB | S3 for large images, DynamoDB binary for small |
-| **Logging** | Loguru | Beautiful logs, file rotation, easy setup |
-| **HTTP Client** | aiohttp | Async HTTP calls |
-| **Validation** | Pydantic | Type-safe data models |
-| **Environment** | python-dotenv | .env file management |
-| **Deployment** | Docker + AWS ECS/Fargate | Containerized, auto-scaling |
+| Component         | Technology               | Reason                                         |
+| ----------------- | ------------------------ | ---------------------------------------------- |
+| **Web Framework** | FastAPI 0.109.2+         | Async, fast, type-safe, OpenAPI docs           |
+| **Language**      | Python 3.12              | Modern features, async/await, type hints       |
+| **Database**      | AWS DynamoDB             | NoSQL, flexible schema, free tier (25GB)       |
+| **LLM**           | Google Gemini 1.5 Flash  | FREE, fast, vision support, 1M tokens/day      |
+| **STT**           | Groq Whisper Large v3    | FREE, 14,400 requests/day, very fast           |
+| **TTS**           | Microsoft Edge TTS       | FREE unlimited, high-quality Korean voices     |
+| **Search**        | DuckDuckGo               | FREE, no API key, privacy-focused              |
+| **Image Storage** | AWS S3 / DynamoDB        | S3 for large images, DynamoDB binary for small |
+| **Logging**       | Loguru                   | Beautiful logs, file rotation, easy setup      |
+| **HTTP Client**   | aiohttp                  | Async HTTP calls                               |
+| **Validation**    | Pydantic                 | Type-safe data models                          |
+| **Environment**   | python-dotenv            | .env file management                           |
+| **Deployment**    | Docker + AWS ECS/Fargate | Containerized, auto-scaling                    |
 
 ### 11.2 Frontend
 
-| Component | Technology | Reason |
-|-----------|------------|--------|
-| **Framework** | Flutter 3.35.7+ | Cross-platform, beautiful UI, native performance |
-| **Language** | Dart 3.0+ | Sound null safety, great async support |
-| **State Management** | Riverpod 3.0 | Modern, type-safe, compile-time safety |
-| **Camera** | camera ^0.10.6 | Official Flutter camera plugin |
-| **Audio Recording** | record ^5.0.0 | Cross-platform audio recording |
-| **Audio Playback** | just_audio ^0.9.46 | Powerful audio playback |
-| **HTTP Client** | dio ^5.4.0 | Retry logic, interceptors, cancel tokens |
-| **Markdown** | flutter_markdown ^0.6.23 | Render AI responses with formatting |
-| **Animations** | flutter_animate ^4.5.0 | Declarative animations |
-| **Image Handling** | image ^4.1.7 | Compression, resizing |
-| **Local Storage** | shared_preferences ^2.2.2 | Simple key-value storage |
-| **Permissions** | permission_handler ^11.2.0 | Camera + mic permissions |
+| Component            | Technology                 | Reason                                           |
+| -------------------- | -------------------------- | ------------------------------------------------ |
+| **Framework**        | Flutter 3.35.7+            | Cross-platform, beautiful UI, native performance |
+| **Language**         | Dart 3.0+                  | Sound null safety, great async support           |
+| **State Management** | Riverpod 3.0               | Modern, type-safe, compile-time safety           |
+| **Camera**           | camera ^0.10.6             | Official Flutter camera plugin                   |
+| **Audio Recording**  | record ^5.0.0              | Cross-platform audio recording                   |
+| **Audio Playback**   | just_audio ^0.9.46         | Powerful audio playback                          |
+| **HTTP Client**      | dio ^5.4.0                 | Retry logic, interceptors, cancel tokens         |
+| **Markdown**         | flutter_markdown ^0.6.23   | Render AI responses with formatting              |
+| **Animations**       | flutter_animate ^4.5.0     | Declarative animations                           |
+| **Image Handling**   | image ^4.1.7               | Compression, resizing                            |
+| **Local Storage**    | shared_preferences ^2.2.2  | Simple key-value storage                         |
+| **Permissions**      | permission_handler ^11.2.0 | Camera + mic permissions                         |
 
 ### 11.3 Infrastructure
 
-| Component | Technology | Cost |
-|-----------|------------|------|
-| **Compute** | AWS ECS Fargate | ~$10-30/month (1 vCPU, 2GB RAM) |
-| **Database** | DynamoDB | FREE (25GB, 25 WCU/RCU) |
-| **Storage** | S3 | ~$0.50-2/month (10-50GB images) |
-| **CDN** | CloudFront | ~$1-5/month (TTS audio caching) |
-| **Domain** | Route 53 | $0.50/month |
-| **SSL** | AWS Certificate Manager | FREE |
-| **Monitoring** | CloudWatch | ~$2-5/month (basic logs) |
-| **Total** | | **~$15-45/month** |
+| Component      | Technology              | Cost                            |
+| -------------- | ----------------------- | ------------------------------- |
+| **Compute**    | AWS ECS Fargate         | ~$10-30/month (1 vCPU, 2GB RAM) |
+| **Database**   | DynamoDB                | FREE (25GB, 25 WCU/RCU)         |
+| **Storage**    | S3                      | ~$0.50-2/month (10-50GB images) |
+| **CDN**        | CloudFront              | ~$1-5/month (TTS audio caching) |
+| **Domain**     | Route 53                | $0.50/month                     |
+| **SSL**        | AWS Certificate Manager | FREE                            |
+| **Monitoring** | CloudWatch              | ~$2-5/month (basic logs)        |
+| **Total**      |                         | **~$15-45/month**               |
 
 ---
 
@@ -1813,6 +1882,7 @@ AI (Adam): "많이 불안하시군요. 그럴 수 있어요.
 **Goal**: Functional backend with Master Directive + basic learning
 
 **Tasks**:
+
 1. Setup FastAPI project structure
 2. Implement DynamoDB service (3 tables)
 3. Create Master Directive prompt system
@@ -1831,6 +1901,7 @@ AI (Adam): "많이 불안하시군요. 그럴 수 있어요.
 **Goal**: Mobile app with voice-first UI
 
 **Tasks**:
+
 1. Create Flutter project (iOS + Android)
 2. Setup Riverpod state management
 3. Build VoiceFirstScreen layout
@@ -1849,6 +1920,7 @@ AI (Adam): "많이 불안하시군요. 그럴 수 있어요.
 **Goal**: Voice + Camera working together
 
 **Tasks**:
+
 1. Keyframe selection algorithm (8 frames from 1 FPS capture)
 2. Image compression before upload (1024x1024, 85% quality)
 3. Multipart form-data upload (audio + images)
@@ -1865,6 +1937,7 @@ AI (Adam): "많이 불안하시군요. 그럴 수 있어요.
 **Goal**: AI learns user over time
 
 **Tasks**:
+
 1. Implement weight update algorithm
 2. Build post-conversation learning pipeline
 3. Create Gemini learning analysis prompt
@@ -1883,6 +1956,7 @@ AI (Adam): "많이 불안하시군요. 그럴 수 있어요.
 **Goal**: AI warns when user strays from One Thing
 
 **Tasks**:
+
 1. Build topic extraction from user messages
 2. Implement alignment scoring (topic vs One Thing)
 3. Create pitfall trigger matching logic
@@ -1899,6 +1973,7 @@ AI (Adam): "많이 불안하시군요. 그럴 수 있어요.
 **Goal**: Production-ready app
 
 **Tasks**:
+
 1. UI/UX refinement (animations, transitions)
 2. Comprehensive error handling
 3. Offline mode (queue requests)
@@ -1915,6 +1990,7 @@ AI (Adam): "많이 불안하시군요. 그럴 수 있어요.
 ### Phase 7: Launch & Iteration (Week 9+)
 
 **Tasks**:
+
 1. Deploy backend to AWS (ECS Fargate)
 2. Configure CI/CD pipeline
 3. Setup monitoring and alerts
@@ -1931,37 +2007,44 @@ AI (Adam): "많이 불안하시군요. 그럴 수 있어요.
 ### 13.1 Data Security
 
 **Encryption**:
+
 - All data in transit: HTTPS/TLS 1.3
 - DynamoDB encryption at rest: AWS KMS
 - S3 encryption: AES-256
 
 **Authentication** (Future):
+
 - JWT tokens for API access
 - OAuth 2.0 for social login
 - Biometric auth on mobile (Face ID, fingerprint)
 
 **API Rate Limiting**:
+
 - 100 requests per user per hour (prevent abuse)
 - Exponential backoff on retry
 
 ### 13.2 Privacy
 
 **Data Minimization**:
+
 - Only collect what's needed for functionality
 - No tracking pixels or analytics (initially)
 - Camera frames deleted after AI processing
 
 **User Control**:
+
 - Option to delete profile data anytime
 - Export conversation history (JSON)
 - Opt-out of learning (stateless mode)
 
 **Transparency**:
+
 - Clear privacy policy (Korean + English)
 - Explain what data is stored and why
 - Show profile learning events to user
 
 **GDPR Compliance** (if expanding to EU):
+
 - Right to be forgotten (delete profile API)
 - Data portability (export API)
 - Consent management
@@ -1972,23 +2055,25 @@ AI (Adam): "많이 불안하시군요. 그럴 수 있어요.
 
 ### 14.1 Latency Targets
 
-| Metric | Target | Max Acceptable |
-|--------|--------|----------------|
-| STT (Groq Whisper) | < 2 seconds | 5 seconds |
-| LLM Response (Gemini) | < 3 seconds | 8 seconds |
-| TTS Generation (Edge) | < 1 second | 3 seconds |
-| Total Response Time | < 6 seconds | 15 seconds |
-| Profile Load | < 500ms | 2 seconds |
-| Learning Pipeline | < 2 seconds (async) | 10 seconds |
+| Metric                | Target              | Max Acceptable |
+| --------------------- | ------------------- | -------------- |
+| STT (Groq Whisper)    | < 2 seconds         | 5 seconds      |
+| LLM Response (Gemini) | < 3 seconds         | 8 seconds      |
+| TTS Generation (Edge) | < 1 second          | 3 seconds      |
+| Total Response Time   | < 6 seconds         | 15 seconds     |
+| Profile Load          | < 500ms             | 2 seconds      |
+| Learning Pipeline     | < 2 seconds (async) | 10 seconds     |
 
 ### 14.2 Scalability
 
 **Backend**:
+
 - Handle 100 concurrent users per server
 - Auto-scale ECS tasks based on CPU (>70%)
 - DynamoDB on-demand (auto-scales)
 
 **Frontend**:
+
 - App launch: < 2 seconds
 - Camera preview: 60 FPS smooth
 - UI interactions: 60 FPS (no jank)
@@ -1996,12 +2081,14 @@ AI (Adam): "많이 불안하시군요. 그럴 수 있어요.
 ### 14.3 Resource Usage
 
 **Mobile**:
+
 - Battery: < 5% drain per 30min session
 - Storage: < 200MB app size
 - Memory: < 150MB RAM usage
 - Network: < 5MB per conversation (including images)
 
 **Backend**:
+
 - CPU: < 50% average (1 vCPU)
 - Memory: < 1.5GB RAM
 - Network: < 1TB/month (1000 daily active users)
@@ -2013,6 +2100,7 @@ AI (Adam): "많이 불안하시군요. 그럴 수 있어요.
 ### 15.1 Backend Testing
 
 **Unit Tests**:
+
 ```python
 # Test profile learning algorithm
 def test_trait_weight_update():
@@ -2040,17 +2128,20 @@ def test_pitfall_detection():
 ```
 
 **Integration Tests**:
+
 - Full conversation flow (STT → LLM → TTS → Learning)
 - DynamoDB read/write operations
 - Gemini API error handling
 
 **Load Tests**:
+
 - 100 simultaneous conversations
 - 1000 profile loads per minute
 
 ### 15.2 Frontend Testing
 
 **Widget Tests**:
+
 ```dart
 testWidgets('PushToTalkButton changes color on press', (tester) async {
   await tester.pumpWidget(PushToTalkButton(
@@ -2072,11 +2163,13 @@ testWidgets('PushToTalkButton changes color on press', (tester) async {
 ```
 
 **Integration Tests**:
+
 - Full user flow (open app → record → receive response)
 - Camera capture and keyframe selection
 - Profile loading and caching
 
 **Device Tests**:
+
 - iPhone 13 (iOS 15)
 - Pixel 7 (Android 13)
 - iPad Pro (tablet)
@@ -2085,6 +2178,7 @@ testWidgets('PushToTalkButton changes color on press', (tester) async {
 ### 15.3 User Acceptance Testing
 
 **Scenarios**:
+
 1. First-time user completes onboarding
 2. User has 20 conversations, profile evolves
 3. User triggers pitfall warning, heeds it
@@ -2093,6 +2187,7 @@ testWidgets('PushToTalkButton changes color on press', (tester) async {
 6. User expresses anxiety, receives support
 
 **Metrics**:
+
 - Task completion rate: > 95%
 - User satisfaction (1-5): > 4.2
 - Perceived intelligence of AI: > 4.0
@@ -2105,16 +2200,19 @@ testWidgets('PushToTalkButton changes color on press', (tester) async {
 ### 16.1 Advanced Learning
 
 **Vector Embeddings**:
+
 - Store conversation embeddings in vector DB (Pinecone, Qdrant)
 - Semantic search for similar past situations
 - Better context retrieval (not just last 10 conversations)
 
 **Sentiment Analysis**:
+
 - Real-time emotion detection from voice tone
 - Facial expression analysis from camera
 - Combine text + voice + face for emotional intelligence
 
 **Goal Tracking**:
+
 - Visualize progress toward One Thing
 - Sub-goal completion metrics
 - AI suggests next milestones
@@ -2122,36 +2220,43 @@ testWidgets('PushToTalkButton changes color on press', (tester) async {
 ### 16.2 Multi-User Features
 
 **Family Mode**:
+
 - Multiple profiles on one device
 - Voice recognition to auto-switch user
 
 **Shared Goals**:
+
 - Couples working toward shared goal
 - AI coordinates between two users
 
 ### 16.3 Integrations
 
 **Calendar Integration**:
+
 - AI knows user's schedule
 - Suggests optimal work times
 - Warns if distraction conflicts with goal deadline
 
 **Notion/Obsidian Integration**:
+
 - Import user's notes as context
 - AI references specific notes in responses
 
 **GitHub Integration** (for developers):
+
 - AI sees commit history
 - Suggests what to build next for portfolio
 
 ### 16.4 Wake Word (Optional)
 
 **Picovoice Porcupine**:
+
 - Custom wake word "Hey Eden"
 - Always-listening mode (battery concern)
 - Hands-free activation
 
 **Implementation**:
+
 - Only after push-to-talk is rock-solid
 - Opt-in feature (privacy-conscious users)
 
@@ -2164,6 +2269,7 @@ testWidgets('PushToTalkButton changes color on press', (tester) async {
 **Trade-off**: The more data AI stores, the smarter it gets, but privacy decreases
 
 **Mitigation**:
+
 - Clear transparency about what's stored
 - User control (delete profile anytime)
 - On-device processing for sensitive data (future)
@@ -2173,6 +2279,7 @@ testWidgets('PushToTalkButton changes color on press', (tester) async {
 **Trade-off**: Free APIs (Groq, Gemini) have rate limits and may change
 
 **Mitigation**:
+
 - Implement fallbacks (if Groq fails → use Whisper API)
 - Monitor usage closely
 - Prepare to migrate to paid tiers if needed
@@ -2222,6 +2329,7 @@ testWidgets('PushToTalkButton changes color on press', (tester) async {
 ### 19.1 Enhanced Learning System
 
 **Contextual Learning Priorities**:
+
 - AI learns faster when user explicitly teaches it
   - User: "I prefer direct feedback, not sugar-coating"
   - AI: Immediately sets `direct_communicator` weight to 0.9 (high confidence)
@@ -2229,10 +2337,12 @@ testWidgets('PushToTalkButton changes color on press', (tester) async {
   - AI: "어떤 스타일의 대화를 선호하세요? 직설적 vs 부드러운?"
 
 **Trait Clustering**:
+
 - Group related traits (perfectionist + stress-prone-when-uncertain → anxiety cluster)
 - Use clusters for better emotional detection
 
 **Learning Velocity Tracking**:
+
 - Fast learners: Profile matures in 20 conversations
 - Slow learners: Needs 50+ conversations
 - Adapt learning rate based on user's openness
@@ -2240,26 +2350,31 @@ testWidgets('PushToTalkButton changes color on press', (tester) async {
 ### 19.2 Multimodal Expansion
 
 **Voice Tone Analysis**:
+
 - Detect stress from voice pitch/speed
 - Frustrated voice → trigger supporter mode faster
 - Use Whisper's confidence scores as emotion proxy
 
 **Screen Sharing (Desktop Future)**:
+
 - User shares screen instead of camera
 - AI sees code, documents, research papers
 - More useful for knowledge workers
 
 **Audio Context**:
+
 - Detect background noise (café, library, home)
 - Adjust speaking style (quieter in library)
 
 **Biometric Integration** (Advanced):
+
 - Heart rate from Apple Watch/Fitbit
 - Elevated heart rate → AI detects stress proactively
 
 ### 19.3 Goal Management System
 
 **Goal Hierarchy**:
+
 ```
 One Thing: "SNU HCI Lab Admission"
 ├── Sub-Goal 1: "Publish 1 HCI paper by June" (50% progress)
@@ -2271,11 +2386,13 @@ One Thing: "SNU HCI Lab Admission"
 ```
 
 **Progress Tracking**:
+
 - AI asks "How's the paper coming?" when user hasn't mentioned it in 3 days
 - Visual progress bars in UI
 - Celebrate milestones (sub-goal completed → confetti animation)
 
 **Deadline Awareness**:
+
 - AI knows "SNU Lab application due: Sept 1, 2025"
 - 30 days before: AI gets more urgent in tone
 - 7 days before: AI suggests daily focused sessions
@@ -2283,20 +2400,24 @@ One Thing: "SNU HCI Lab Admission"
 ### 19.4 Benevolent Dissent Improvements
 
 **Severity Levels**:
+
 1. **Gentle Nudge** (Low severity):
+
    - User asks about tangential topic
    - AI: "흥미로운데, 이게 [One Thing]과 연결될까요?"
 
 2. **Firm Warning** (Medium severity):
+
    - User wants to spend significant time on distraction
    - AI: "잠깐만요. 이건 [Core Pitfall] 패턴이에요. 정말 지금 필요한가요?"
 
 3. **Strong Intervention** (High severity):
    - User consistently ignoring pitfall warnings
    - AI: "제가 걱정되네요. 최근 일주일간 [One Thing]에서 계속 멀어지고 있어요.
-          무슨 일인가요? 목표가 바뀌신 건가요?"
+     무슨 일인가요? 목표가 바뀌신 건가요?"
 
 **Pitfall Learning**:
+
 - If user heeds warning → increase pitfall confidence
 - If user ignores warning → add new trigger
 - Track "pitfall resistance rate" (how often user ignores)
@@ -2304,16 +2425,19 @@ One Thing: "SNU HCI Lab Admission"
 ### 19.5 Emotional Intelligence Expansion
 
 **Emotion Graph**:
+
 - Track emotional states over time (line chart)
 - User can see: "You were anxious 5 times this week, all before deadlines"
 - Predictive: "Based on patterns, you'll likely feel stressed tomorrow"
 
 **Emotion-Triggered Actions**:
+
 - If user is anxious 3 days in a row → AI suggests break
 - If user is excited → AI amplifies energy (especially with Eve)
 - If user is frustrated → AI switches to Adam (calm, logical)
 
 **Recovery Pattern Library**:
+
 ```python
 if emotional_state == "anxious" and trigger == "deadline_pressure":
     if recovery_pattern == "needs_validation":
@@ -2325,16 +2449,19 @@ if emotional_state == "anxious" and trigger == "deadline_pressure":
 ### 19.6 Persona Evolution
 
 **Dynamic Persona Traits**:
+
 - Adam learns user's preferred "father figure" style
   - Some users prefer strict Adam
   - Some prefer gentle Adam
   - AI adapts Adam's tone based on user response
 
 **Persona Blending** (Future):
+
 - User creates custom persona (60% Adam logic, 40% Eve energy)
 - AI generates hybrid prompts
 
 **Persona Recommendation**:
+
 - AI suggests persona based on context
   - Morning planning session → Adam (logical)
   - Evening celebration → Eve (uplifting)
@@ -2343,16 +2470,19 @@ if emotional_state == "anxious" and trigger == "deadline_pressure":
 ### 19.7 Conversation Memory Enhancements
 
 **Memory Summarization**:
+
 - After 100 conversations, AI summarizes key themes
 - Stores compressed summaries instead of raw text
 - Saves DynamoDB storage costs
 
 **Memory Importance Weighting**:
+
 - Not all conversations are equally important
 - Breakthrough moments (goal changes, pitfall discoveries) → high weight
 - Small talk → low weight, decays faster
 
 **Memory Pruning**:
+
 - After 6 months, old irrelevant conversations auto-deleted
 - Important memories preserved indefinitely
 - User can "pin" important conversations
@@ -2360,21 +2490,25 @@ if emotional_state == "anxious" and trigger == "deadline_pressure":
 ### 19.8 UI/UX Advanced Features
 
 **Haptic Feedback**:
+
 - Button press → light haptic
 - Pitfall warning → strong haptic (alert)
 - Response ready → gentle haptic
 
 **Ambient Animations**:
+
 - Idle state: Subtle breathing animation on mic button
 - Processing: Elegant spinner (not loading wheel)
 - Responding: Text appears word-by-word (typewriter effect)
 
 **Dark Mode Variants**:
+
 - Pure Black (OLED-friendly, battery-saving)
 - Deep Grey (softer on eyes)
 - Midnight Blue (cooler tone)
 
 **Accessibility**:
+
 - VoiceOver: Full screen reader support
 - Dynamic Type: Text scales with iOS settings
 - High Contrast: Increase border/text contrast
@@ -2383,15 +2517,18 @@ if emotional_state == "anxious" and trigger == "deadline_pressure":
 ### 19.9 Advanced Privacy Features
 
 **On-Device Processing** (Future):
+
 - Use on-device LLM (Gemini Nano on Pixel 8+)
 - Never send sensitive data to cloud
 - Slower but 100% private mode
 
 **Encrypted Profiles**:
+
 - Profile data encrypted with user's biometric key
 - Even we can't read it (zero-knowledge encryption)
 
 **Anonymized Analytics**:
+
 - If we add analytics (Mixpanel, Amplitude)
 - No PII, only aggregated metrics
 - User can opt-out entirely
@@ -2399,16 +2536,19 @@ if emotional_state == "anxious" and trigger == "deadline_pressure":
 ### 19.10 Social Features (Optional)
 
 **Accountability Partner**:
+
 - User can share One Thing progress with friend
 - Friend sees updates (not full conversations)
 - AI encourages both users
 
 **Leaderboards** (Gamification):
+
 - Track "days focused on One Thing"
 - Compare with anonymous community
 - Badges for milestones
 
 **Community Insights**:
+
 - "80% of users working on grad school also struggle with [Core Pitfall: Imposter Syndrome]"
 - User feels less alone
 
@@ -2417,6 +2557,7 @@ if emotional_state == "anxious" and trigger == "deadline_pressure":
 ## 20. Final Checklist (Before Starting)
 
 ### 20.1 Backend Checklist
+
 - [ ] FastAPI project scaffolding
 - [ ] DynamoDB tables designed (3 tables)
 - [ ] Gemini API key obtained (FREE)
@@ -2427,6 +2568,7 @@ if emotional_state == "anxious" and trigger == "deadline_pressure":
 - [ ] Docker setup ready
 
 ### 20.2 Frontend Checklist
+
 - [ ] Flutter project created (iOS + Android)
 - [ ] Riverpod state management setup
 - [ ] Camera package tested on device
@@ -2436,6 +2578,7 @@ if emotional_state == "anxious" and trigger == "deadline_pressure":
 - [ ] Glassmorphism effect working
 
 ### 20.3 Infrastructure Checklist
+
 - [ ] AWS account created
 - [ ] DynamoDB table names reserved
 - [ ] S3 bucket created (for images)
@@ -2444,6 +2587,7 @@ if emotional_state == "anxious" and trigger == "deadline_pressure":
 - [ ] CI/CD pipeline designed (GitHub Actions)
 
 ### 20.4 Design Checklist
+
 - [ ] Persona toggle design approved
 - [ ] Push-to-talk button animation finalized
 - [ ] Response overlay glassmorphism tested
@@ -2456,24 +2600,26 @@ if emotional_state == "anxious" and trigger == "deadline_pressure":
 ## 21. Conclusion
 
 **Project Eden V2** is not a chatbot. It is a **deeply personalized AI partner** that:
+
 - Learns who you are (Am-muk-ji system)
 - Focuses you on your One Thing
 - Warns when you stray (Benevolent Dissent)
 - Supports you emotionally when needed
 - Evolves with you over time
-
-**Core Innovation**:
+  **Core Innovation**:
 - **Neural Network-Inspired Learning**: AI doesn't just remember conversations, it **learns you** like a human mentor would
 - **Master Directive System**: Every response is filtered through your profile, goals, and pitfalls
 - **Voice + Camera First**: Immersive, hands-free, natural interaction
 
 **Target User**:
+
 - Someone with a clear, important goal (grad school, career change, skill mastery)
 - Struggles with distractions (shiny object syndrome, competency trap)
 - Values honesty over empty praise
 - Wants a partner, not a servant
 
 **Why This Will Work**:
+
 1. **Personalization at scale**: Every user gets a unique AI that grows with them
 2. **Real value**: Helps achieve tangible goals (not just entertainment)
 3. **Emotional connection**: AI feels like it "knows" you
