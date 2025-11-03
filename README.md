@@ -2,30 +2,7 @@
 
 **A J.A.R.V.I.S.-like AI Partner That Deeply Understands You**
 
-Version: 2.0.0 | Status: **Phases 1-7 Complete** ✅ | **Production Ready** 🚀
-
----
-
-## 🎉 Latest Update: Phase 7 Complete - Production Ready!
-
-**All 7 development phases complete!**
-
-- ✅ **Phase 1**: Backend Core - Complete
-- ✅ **Phase 2**: Flutter Mobile App - Complete
-- ✅ **Phase 3**: Platform Configuration - Complete
-- ✅ **Phase 4**: Automated Setup - Complete
-- ✅ **Phase 5**: UI/UX Polish - Complete
-- ✅ **Phase 6**: Integration & Polish - Complete
-- ✅ **Phase 7**: Testing & Production Infrastructure - Complete
-
-**New in Phase 7**:
-- 🛡️ Global error handling with user-friendly messages
-- 📝 Comprehensive logging system
-- 💾 Local caching for offline support
-- 🧪 Integration test infrastructure
-- 🔨 Automated build scripts
-
-**Quick Start**: Run `./frontend/build_release.sh` to build production APK/iOS!
+Version: 2.0.0 | Status: **Production Ready** 🚀 | All 7 Phases Complete ✅
 
 ---
 
@@ -45,14 +22,46 @@ Project Eden is NOT a chatbot. It's a **deeply personalized AI partner** that:
 
 ---
 
+## 🚀 Quick Start (5 Minutes)
+
+### 1. Start the Backend
+
+```bash
+cd backend
+./setup_local.sh    # First time only - installs everything
+./start_local.sh    # Starts the server at http://localhost:8000
+```
+
+### 2. Run the Mobile App
+
+```bash
+# Get your local IP (for phone connection)
+ipconfig getifaddr en0  # macOS/Linux
+
+cd frontend
+flutter pub get
+flutter run  # Connect device via USB first
+```
+
+### 3. Use the App!
+
+1. Grant camera and microphone permissions
+2. Press and hold the big microphone button
+3. Say something in Korean (e.g., "안녕하세요")
+4. Release and wait for AI response!
+
+**That's it!** 🎉
+
+---
+
 ## Core Innovation: Am-muk-ji Learning System
 
-Traditional AI: Stores conversations
-**Eden V2**: **Learns you like a human mentor would**
+Traditional AI stores conversations.
+**Eden V2 learns you like a human mentor would.**
 
-The AI builds a living profile with **weighted personality traits** (inspired by neural networks):
+The AI builds a living profile with **weighted personality traits**:
 - Traits observed frequently → weight increases (0.5 → 0.9)
-- Traits not reinforced recently → weight decays (0.8 → 0.6)
+- Traits not reinforced → weight decays (0.8 → 0.6)
 - AI gets "smarter" about you over time
 
 Example traits tracked:
@@ -66,25 +75,23 @@ Example traits tracked:
 ## Key Features
 
 ### 1. Master Directive System
-
 Every AI response is filtered through:
-- ✅ Your user profile (Core Identity, One Thing, Core Pitfall)
-- ✅ Recent memory (last 10 conversations)
-- ✅ Current input (voice + camera + text)
-- ✅ Pitfall detection (alignment check)
-- ✅ Emotional state detection
+- Your profile (One Thing, Core Pitfall, traits)
+- Recent conversation memory
+- Current input (voice + camera + text)
+- Pitfall detection with alignment check
+- Emotional state detection
 
 ### 2. Benevolent Dissent
-
 When you ask about something that triggers your **Core Pitfall**, AI intervenes:
 
 **Example:**
 ```
 User: "Should I learn SLAM algorithms?"
-AI (Adam): "잠깐만요. SLAM은 흥미로운 분야지만,
-           지금 당신의 One Thing인 SNU HCI Lab과 어떤 연결고리가 있나요?
-           이건 당신의 '능력 함정' 패턴으로 보입니다.
-           에너지가 분산되면 HCI 연구 준비에서 멀어질 수 있어요."
+AI (Adam): "잠깐만요. SLAM은 흥미롭지만,
+           지금 SNU HCI Lab이 목표 아닌가요?
+           이게 당신의 '능력 함정' 패턴으로 보여요.
+           에너지 분산되면 HCI 준비에서 멀어질 수 있어요."
 ```
 
 ### 3. Dual Personas
@@ -93,25 +100,23 @@ AI (Adam): "잠깐만요. SLAM은 흥미로운 분야지만,
 - Male voice, logical, father-like
 - Uses questions to guide thinking
 - Direct but caring
-- Example: "먼저 생각해봅시다. 이 선택이 목표와 어떻게 연결되나요?"
 
 **Eve (이브)**
 - Female voice, energetic, uplifting
 - Celebrates and validates warmly
 - Makes you feel good naturally
-- Example: "와! 정말 대단한데요! 당신은 이미 충분히 잘하고 있어요!"
 
 ### 4. Profile Evolution
 
-**Week 1**: Basic profile, AI asks questions
-**Week 4**: Patterns emerge, 5-7 traits discovered
-**Week 12**: Mature profile, AI "knows" you deeply
-**Month 6+**: J.A.R.V.I.S.-level partnership - predicts needs, intervenes proactively
+- **Week 1**: Basic profile, AI asks questions
+- **Week 4**: Patterns emerge, 5-7 traits discovered
+- **Week 12**: Mature profile, AI "knows" you deeply
+- **Month 6+**: J.A.R.V.I.S.-level partnership
 
-### 5. Production-Ready Features (Phase 7)
+### 5. Production Features
 
 - 🛡️ **Error Recovery**: Automatic retry with exponential backoff
-- 📝 **Smart Logging**: Track user actions, API calls, performance
+- 📝 **Smart Logging**: Track actions, API calls, performance
 - 💾 **Offline Support**: Cached profiles and settings
 - 🎨 **Polished UI**: Loading states, retry feedback, smooth transitions
 - ⚠️ **Pitfall Warnings**: Visual alerts when straying from goals
@@ -120,30 +125,25 @@ AI (Adam): "잠깐만요. SLAM은 흥미로운 분야지만,
 
 ## Technical Stack
 
-### Backend (✅ Phase 1 Complete)
-- **Framework**: FastAPI 0.109.2 (Python 3.12)
-- **Database**: AWS DynamoDB (NoSQL, free tier) + Local in-memory for testing
+### Backend
+- **Framework**: FastAPI (Python 3.12)
+- **Database**: DynamoDB (NoSQL) + Local in-memory
 - **LLM**: Google Gemini 1.5 Flash (FREE, vision support)
 - **STT**: Groq Whisper Large v3 (FREE, 14,400 req/day)
 - **TTS**: Edge TTS (FREE unlimited, Korean voices)
-- **Search**: DuckDuckGo (FREE)
 
-### Frontend (✅ Phases 2-7 Complete)
+### Frontend
 - **Framework**: Flutter 3.35.7+
 - **State**: Riverpod 3.0
-- **Platform**: iOS & Android (mobile-first)
-- **UI**: Voice-first with full-screen camera
-- **Audio**: Record (recording) + Just Audio (playback)
+- **Platform**: iOS & Android
+- **Audio**: Record + Just Audio
 - **Camera**: 1 FPS capture with keyframe selection
-- **Caching**: SharedPreferences for offline support
-- **Error Handling**: Global error boundary with recovery
-- **Logging**: Structured logging with performance tracking
+- **Caching**: SharedPreferences
+- **Error Handling**: Global error boundary
 
 ### Infrastructure
 - **Deployment**: Docker + AWS ECS/Fargate (optional)
-- **Storage**: AWS S3 for camera frames (optional)
-- **Monitoring**: CloudWatch (optional)
-- **Cost**: ~$0/month (local testing) or ~$15-45/month (production AWS)
+- **Cost**: ~$0/month (local) or ~$15-45/month (AWS production)
 
 ---
 
@@ -151,21 +151,22 @@ AI (Adam): "잠깐만요. SLAM은 흥미로운 분야지만,
 
 ```
 myai/
-├── README.md                          # This file
-├── PROJECT_EDEN_V2_MASTER_SPEC.md    # Complete specification
+├── README.md                    # This file
+├── DEPLOYMENT.md                # Comprehensive deployment guide
+├── PROJECT_EDEN_V2_MASTER_SPEC.md  # Complete specification
 │
-├── Phase Documentation/
-│   ├── PHASE_1_COMPLETE.md           # ✅ Backend Core
-│   ├── PHASE_2_COMPLETE.md           # ✅ Flutter Mobile App
-│   ├── PHASE_3_COMPLETE.md           # ✅ Platform Configuration
-│   ├── PHASE_4_AUTOMATED_SETUP_COMPLETE.md  # ✅ Setup Automation
-│   ├── PHASE_5_COMPLETE.md           # ✅ UI/UX Polish
-│   ├── PHASE_6_COMPLETE.md           # ✅ Integration & Polish
-│   └── PHASE_7_COMPLETE.md           # ✅ Production Infrastructure
+├── docs/archive/                # Historical phase documentation
+│   ├── PHASE_1_COMPLETE.md     # Backend Core
+│   ├── PHASE_2_COMPLETE.md     # Mobile App
+│   ├── PHASE_3_COMPLETE.md     # Platform Config
+│   ├── PHASE_4_AUTOMATED_SETUP_COMPLETE.md  # Setup Automation
+│   ├── PHASE_5_COMPLETE.md     # UI/UX Polish
+│   ├── PHASE_6_COMPLETE.md     # Integration
+│   └── PHASE_7_COMPLETE.md     # Production Infrastructure
 │
-├── backend/                           # ✅ Complete
-│   ├── main.py                        # FastAPI app
-│   ├── services/                      # Core services
+├── backend/                     # FastAPI Backend
+│   ├── main.py                 # FastAPI app
+│   ├── services/               # Core services (7 services)
 │   │   ├── master_directive_processor.py
 │   │   ├── profile_learning_service.py
 │   │   ├── pitfall_detection_service.py
@@ -173,114 +174,103 @@ myai/
 │   │   ├── stt_service.py
 │   │   ├── tts_service.py
 │   │   └── dynamodb_service_v2.py
-│   ├── models/                        # Data models
-│   ├── prompts/                       # Master Directive prompts
-│   ├── utils/                         # Logger, constants
-│   ├── setup_local.sh                 # ✅ Auto-setup script
-│   ├── start_local.sh                 # ✅ Start script
-│   ├── Dockerfile
+│   ├── models/                 # Pydantic data models
+│   ├── prompts/                # Master Directive prompts
+│   ├── utils/                  # Logger, constants
+│   ├── setup_local.sh          # Auto-setup script
+│   ├── start_local.sh          # Start script
 │   └── requirements.txt
 │
-└── frontend/                          # ✅ Complete
+└── frontend/                    # Flutter Mobile App
     ├── lib/
-    │   ├── main.dart                  # App entry
-    │   ├── models/                    # Data models
-    │   ├── services/                  # Services
-    │   │   ├── api_service.dart       # HTTP client with retry
-    │   │   ├── audio_service.dart     # Recording + playback
-    │   │   ├── camera_service.dart    # 1 FPS capture
-    │   │   └── cache_service.dart     # ✅ NEW: Local caching
-    │   ├── providers/                 # Riverpod state
-    │   │   ├── app_state_provider.dart  # Enhanced with retry/loading
-    │   │   ├── service_providers.dart
-    │   │   └── profile_provider.dart
-    │   ├── widgets/                   # UI components
+    │   ├── main.dart
+    │   ├── models/             # Data models
+    │   ├── services/           # Services
+    │   │   ├── api_service.dart      # HTTP client
+    │   │   ├── audio_service.dart    # Recording + playback
+    │   │   ├── camera_service.dart   # 1 FPS capture
+    │   │   └── cache_service.dart    # Local caching
+    │   ├── providers/          # Riverpod state
+    │   ├── widgets/            # UI components
     │   │   ├── persona_toggle.dart
     │   │   ├── push_to_talk_button.dart
     │   │   ├── camera_view.dart
     │   │   ├── response_overlay.dart
-    │   │   ├── loading_overlay.dart      # ✅ NEW
-    │   │   ├── pitfall_warning_banner.dart  # ✅ NEW
-    │   │   └── trait_card.dart           # ✅ NEW
-    │   ├── screens/                   # Screens
-    │   │   ├── voice_first_screen.dart   # Main screen (enhanced)
-    │   │   ├── profile_screen.dart       # ✅ NEW: View profile
-    │   │   └── settings_screen.dart      # ✅ NEW: App settings
-    │   ├── utils/                     # Utilities
-    │   │   ├── constants.dart
-    │   │   ├── error_handler.dart        # ✅ NEW: Global errors
-    │   │   ├── logger.dart               # ✅ NEW: Logging
-    │   │   └── page_transitions.dart     # ✅ NEW: Navigation
-    │   └── theme/
-    │       └── app_theme.dart
-    ├── integration_test/              # ✅ NEW: Integration tests
-    │   └── app_test.dart
-    ├── build_release.sh               # ✅ NEW: Automated builds
+    │   │   ├── loading_overlay.dart
+    │   │   ├── pitfall_warning_banner.dart
+    │   │   └── trait_card.dart
+    │   ├── screens/            # Screens
+    │   │   ├── voice_first_screen.dart  # Main screen
+    │   │   ├── profile_screen.dart      # View profile
+    │   │   └── settings_screen.dart     # App settings
+    │   └── utils/              # Utilities
+    │       ├── error_handler.dart       # Global errors
+    │       ├── logger.dart              # Logging
+    │       └── page_transitions.dart
+    ├── integration_test/       # Integration tests
+    ├── build_release.sh        # Automated build script
     └── pubspec.yaml
 ```
 
 ---
 
-## 🚀 Quick Start
+## App Features
 
-### Prerequisites
+### Main Screen (Voice-First)
+- **Push-to-Talk**: Press and hold microphone button to record
+- **Persona Toggle**: Switch between Adam and Eve
+- **Camera View**: Full-screen camera with 1 FPS capture
+- **Response Overlay**: Glassmorphism design with AI responses
+- **Pitfall Warning**: Visual banner when straying from goals
+- **Loading States**: Animated feedback during processing
 
-1. **Backend**: Python 3.12+, pip
-2. **Frontend**: Flutter 3.35.7+, Dart 3.9.2+
-3. **Device**: iOS/Android phone with USB cable
-4. **API Keys**: Google Gemini, Groq (both FREE)
+### Profile Screen
+- View your "One Thing" and "Core Pitfall"
+- See personality traits with weights
+- View conversation stats and maturity level
+- Track profile evolution over time
 
-### Super Quick Start (5 minutes)
-
-**1. Start Backend**
-```bash
-cd backend
-./setup_local.sh    # First time only - installs dependencies
-./start_local.sh    # Starts server
-```
-
-**2. Run Mobile App**
-```bash
-# Get your local IP
-ipconfig getifaddr en0  # macOS/Linux
-# Windows: ipconfig (look for IPv4)
-
-cd frontend
-flutter pub get
-flutter run  # Connect device via USB first
-```
-
-**3. Test!**
-- Grant camera/microphone permissions
-- Press and hold mic button
-- Say something in Korean
-- Release and wait for AI response
-
-Server runs at `http://localhost:8000`
-API docs: `http://localhost:8000/docs`
-
-### Build Release APK/iOS
-
-```bash
-cd frontend
-./build_release.sh  # Runs tests, analysis, builds release
-```
-
-Output:
-- **Android**: `build/app/outputs/flutter-apk/app-release.apk`
-- **iOS**: `build/ios/Release-iphoneos/Runner.app`
-
-### Get API Keys (All FREE)
-
-1. **Google Gemini**: https://ai.google.dev/
-2. **Groq (Whisper)**: https://console.groq.com/
-3. **AWS**: https://aws.amazon.com/ (Optional - for production)
-
-Update `backend/.env` with your keys.
+### Settings Screen
+- Adjust TTS volume
+- Enable/disable camera
+- Select default persona (Adam/Eve)
+- Clear cache
+- View app version
 
 ---
 
-## API Example
+## Development Phases - ALL COMPLETE ✅
+
+| Phase | Focus | Status |
+|-------|-------|--------|
+| **Phase 1** | Backend Core - FastAPI, DynamoDB, LLM, STT/TTS | ✅ Complete |
+| **Phase 2** | Flutter Mobile App - Voice-first UI, camera, audio | ✅ Complete |
+| **Phase 3** | Platform Configuration - iOS/Android permissions | ✅ Complete |
+| **Phase 4** | Automated Setup - Scripts, environment setup | ✅ Complete |
+| **Phase 5** | UI/UX Polish - Retry, loading, profile, settings | ✅ Complete |
+| **Phase 6** | Integration & Polish - Navigation, transitions | ✅ Complete |
+| **Phase 7** | Production Infrastructure - Errors, logging, caching | ✅ Complete |
+
+**Production Readiness: 80%** 🚀
+
+✅ **Ready:**
+- Complete feature set (7 services, 3 screens, 10+ widgets)
+- Robust error handling with recovery
+- Offline capability with caching
+- Clean, tested code (0 errors, 0 warnings)
+- Build automation
+- Comprehensive documentation
+
+⚠️ **Optional Enhancements:**
+- Device testing on various phones
+- App icon & splash screen
+- App Store listing materials
+- Performance profiling
+- Analytics integration
+
+---
+
+## API Examples
 
 ### Chat with AI
 
@@ -305,100 +295,34 @@ curl -X POST "http://localhost:8000/api/v2/chat" \
 }
 ```
 
----
+### Get User Profile
 
-## Implementation Phases - ALL COMPLETE ✅
+```bash
+curl "http://localhost:8000/api/v2/profile/user_123"
+```
 
-### ✅ Phase 1: Backend Core (Week 1) - **COMPLETE**
-- FastAPI with Master Directive system
-- DynamoDB service (3 tables) + Local in-memory for testing
-- Gemini LLM integration (vision support)
-- STT (Groq Whisper) + TTS (Edge TTS)
-- Profile learning with weight updates
-- Pitfall detection
-- Docker deployment
+### API Documentation
 
-### ✅ Phase 2: Flutter Mobile App (Week 2) - **COMPLETE**
-- Voice-first UI with full-screen camera
-- Push-to-talk button with state animations
-- Persona toggle (Adam/Eve)
-- Response overlay with glassmorphism
-- Audio recording and playback
-- Camera service (1 FPS capture)
-- Riverpod state management
-- Permission handling
-
-### ✅ Phase 3: Platform Configuration (Week 3) - **COMPLETE**
-- iOS permissions (Info.plist)
-- Android permissions (AndroidManifest.xml)
-- Deployment documentation
-- Testing guides and checklists
-- Quick start guide
-
-### ✅ Phase 4: Automated Setup (Week 3) - **COMPLETE**
-- Backend virtual environment setup
-- Automated dependency installation
-- Environment configuration
-- Local IP auto-detection
-- Setup scripts for easy deployment
-
-### ✅ Phase 5: UI/UX Polish (Week 4) - **COMPLETE**
-- Retry logic with exponential backoff
-- Loading overlay with retry feedback
-- Pitfall warning banner
-- Profile viewing screen
-- Settings screen
-- Trait visualization cards
-- Enhanced state management
-
-### ✅ Phase 6: Integration & Polish (Week 4-5) - **COMPLETE**
-- Integrated all Phase 5 UI components
-- Profile & Settings navigation
-- Custom page transitions
-- Loading states wired to VoiceFirstScreen
-- Pitfall banner integration
-- Retry callbacks with UI feedback
-
-### ✅ Phase 7: Production Infrastructure (Week 5) - **COMPLETE**
-- Global error handling with recovery
-- Comprehensive logging system
-- Local caching (profile, settings, responses)
-- Integration test framework
-- Automated build scripts
-- Production-ready code (0 errors/warnings)
+Full interactive API docs: **http://localhost:8000/docs**
 
 ---
 
-## Current Status
+## Build Release
 
-| Phase | Status | Progress |
-|-------|--------|----------|
-| Phase 1: Backend Core | ✅ Complete | 100% |
-| Phase 2: Mobile App | ✅ Complete | 100% |
-| Phase 3: Platform Config | ✅ Complete | 100% |
-| Phase 4: Automated Setup | ✅ Complete | 100% |
-| Phase 5: UI/UX Polish | ✅ Complete | 100% |
-| Phase 6: Integration & Polish | ✅ Complete | 100% |
-| Phase 7: Production Infrastructure | ✅ Complete | 100% |
+```bash
+cd frontend
+./build_release.sh
+```
 
-**Production Readiness**: **80%** 🚀
+**Process:**
+1. ✅ Code analysis (`flutter analyze`)
+2. ✅ Run tests (`flutter test`)
+3. ✅ Build Android APK
+4. ✅ Build iOS (if on macOS)
 
-✅ **Ready**:
-- Complete feature set
-- Robust error handling
-- Offline capability
-- Clean, tested code
-- Build automation
-- Comprehensive documentation
-
-⚠️ **Optional Enhancements**:
-- Device testing on various phones
-- App icon & splash screen
-- App Store listing materials
-- Performance profiling
-- Analytics integration
-
-**Next Steps**: Device testing, app store preparation, or deployment!
+**Output:**
+- Android: `build/app/outputs/flutter-apk/app-release.apk`
+- iOS: `build/ios/Release-iphoneos/Runner.app`
 
 ---
 
@@ -412,38 +336,11 @@ Examples:
 - "Launch my startup by June"
 - "Lose 15kg in 3 months"
 
-AI's mission: **Keep you focused on this goal** and warn when you're distracted.
+**AI's mission:** Keep you focused on this goal and warn when you're distracted.
 
 ---
 
-## Master Directive Prompt (Simplified)
-
-```
-🌟 [Project Eden: Master Directive] 🌟
-
-[USER PROFILE]
-One Thing: SNU HCI Lab admission
-Core Pitfall: Competency Trap - energy scattering
-Top Traits: night_owl (0.93), perfectionist (0.87)
-
-[CURRENT INPUT]
-User: "Should I learn Rust?"
-
-[PITFALL CHECK]
-Topic: "Rust programming"
-Alignment with One Thing: 0.2 (WEAK)
-→ BENEVOLENT DISSENT ACTIVATED
-
-[RESPONSE]
-잠깐만요. Rust는 훌륭한 언어죠. 하지만
-지금 SNU HCI Lab 준비 중이시잖아요?
-Systems programming이 HCI 연구에 꼭 필요한가요?
-혹시 호기심 때문에 에너지가 분산되고 있는 건 아닐까요?
-```
-
----
-
-## Why This Will Work
+## Why This Works
 
 1. **Personalization at scale**: Every user gets a unique AI that grows with them
 2. **Real value**: Helps achieve tangible goals (not just entertainment)
@@ -456,57 +353,56 @@ Systems programming이 HCI 연구에 꼭 필요한가요?
 
 ## Documentation
 
-### Core Documentation
-- **Master Specification**: [PROJECT_EDEN_V2_MASTER_SPEC.md](PROJECT_EDEN_V2_MASTER_SPEC.md)
-- **Backend README**: [backend/README.md](backend/README.md)
-- **API Docs**: http://localhost:8000/docs (when running)
+### Main Docs
+- **This README**: Project overview and quick start
+- **[DEPLOYMENT.md](DEPLOYMENT.md)**: Comprehensive deployment guide (6,000+ words)
+- **[PROJECT_EDEN_V2_MASTER_SPEC.md](PROJECT_EDEN_V2_MASTER_SPEC.md)**: Complete specification
+- **[backend/README.md](backend/README.md)**: Backend documentation
 
-### Phase Completion Reports
-- **Phase 1**: [PHASE_1_COMPLETE.md](PHASE_1_COMPLETE.md) - Backend Core
-- **Phase 2**: [PHASE_2_COMPLETE.md](PHASE_2_COMPLETE.md) - Flutter Mobile App
-- **Phase 3**: [PHASE_3_COMPLETE.md](PHASE_3_COMPLETE.md) - Platform Configuration
-- **Phase 4**: [PHASE_4_AUTOMATED_SETUP_COMPLETE.md](PHASE_4_AUTOMATED_SETUP_COMPLETE.md) - Automated Setup
-- **Phase 5**: [PHASE_5_COMPLETE.md](PHASE_5_COMPLETE.md) - UI/UX Polish
-- **Phase 6**: [PHASE_6_COMPLETE.md](PHASE_6_COMPLETE.md) - Integration & Polish
-- **Phase 7**: [PHASE_7_COMPLETE.md](PHASE_7_COMPLETE.md) - Production Infrastructure
+### Phase Documentation
+- All phase completion reports in **[docs/archive/](docs/archive/)**
+- Historical implementation details and metrics
 
-### Deployment & Testing
-- **Quick Start**: See "Quick Start" section above
-- **Build Release**: Run `./frontend/build_release.sh`
-- **Testing**: Integration tests in `frontend/integration_test/`
+### API Documentation
+- **Interactive API Docs**: http://localhost:8000/docs (when server running)
 
 ---
 
-## New Features (Phase 7)
+## Testing
 
-### Error Handling 🛡️
-- Global error boundary catches all errors
-- User-friendly Korean error messages
-- Automatic error categorization
-- Error logging with stack traces
+### Run Tests
 
-### Logging 📝
-- 4 log levels with emoji indicators
-- App lifecycle tracking
-- API call monitoring
-- Performance metrics logging
+```bash
+# Unit tests
+cd frontend
+flutter test
 
-### Caching 💾
-- User profile caching (faster startup)
-- Settings persistence (volume, camera, persona)
-- Last response caching (1-hour expiration)
-- Offline support with cached data
+# Integration tests
+flutter test integration_test/app_test.dart
 
-### Testing 🧪
-- Integration test framework
-- Smoke tests for app launch
-- Ready for expansion
+# Code analysis
+flutter analyze
+```
 
-### Build Automation 🔨
-- One-command release builds
-- Automated testing before build
-- Android APK + iOS builds
-- Build verification
+### Manual Testing Checklist
+1. Voice recording and transcription
+2. Persona switching (Adam/Eve)
+3. Profile viewing and updates
+4. Settings persistence
+5. Offline mode (cached data)
+6. Error recovery (network failures)
+7. Camera capture (1 FPS)
+8. Pitfall warning triggers
+
+---
+
+## Get API Keys (All FREE)
+
+1. **Google Gemini**: https://ai.google.dev/
+2. **Groq (Whisper)**: https://console.groq.com/
+3. **AWS** (optional): https://aws.amazon.com/
+
+Update `backend/.env` with your keys.
 
 ---
 
@@ -517,6 +413,40 @@ Systems programming이 HCI 연구에 꼭 필요한가요?
 - **Offline support**: Cached profile loads instantly
 - **Memory usage**: < 200 MB typical
 - **Build size**: ~40-50 MB APK
+
+---
+
+## Troubleshooting
+
+### Backend Issues
+
+**"Port 8000 already in use"**
+```bash
+lsof -ti:8000 | xargs kill
+cd backend && ./start_local.sh
+```
+
+**"ModuleNotFoundError"**
+```bash
+cd backend && ./setup_local.sh
+```
+
+### Frontend Issues
+
+**Build errors**
+```bash
+cd frontend
+flutter clean
+flutter pub get
+flutter run
+```
+
+**No devices found**
+- Connect phone via USB
+- Enable USB debugging (Android)
+- Trust computer (iOS)
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for comprehensive troubleshooting.
 
 ---
 
