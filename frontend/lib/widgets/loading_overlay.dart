@@ -20,9 +20,11 @@ class LoadingOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.black.withValues(alpha: 0.7),
-      child: Center(
+    return IgnorePointer(
+      ignoring: false,
+      child: Container(
+        color: Colors.black.withValues(alpha: 0.7),
+        child: Center(
         child: Container(
           margin: const EdgeInsets.all(UIConstants.spacingXL),
           padding: const EdgeInsets.all(UIConstants.spacingXL),
@@ -107,6 +109,7 @@ class LoadingOverlay extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

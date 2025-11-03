@@ -62,6 +62,11 @@ class _PushToTalkButtonState extends State<PushToTalkButton> {
               blurRadius: 30,
               spreadRadius: widget.mode == AppMode.listening ? 15 : 5,
             ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.8),
+              blurRadius: 10,
+              spreadRadius: 0,
+            ),
           ],
         ),
         child: Icon(

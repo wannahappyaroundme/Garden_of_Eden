@@ -64,21 +64,23 @@ class UserProfile {
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
-    final personalitySummary = json['personality_summary'] as Map<String, dynamic>;
-    final topTraitsList = personalitySummary['top_traits'] as List;
+    final personalitySummary = json['personality_summary'] as Map<String, dynamic>?;
+    final topTraitsList = personalitySummary?['top_traits'] as List? ?? [];
 
     return UserProfile(
       userId: json['user_id'] as String,
-      profileVersion: json['profile_version'] as int,
+      profileVersion: json['profile_version'] as int? ?? 0,
       oneThing: json['one_thing'] as String?,
       corePitfall: json['core_pitfall'] as String?,
       topTraits: topTraitsList
           .map((t) => PersonalityTrait.fromJson(t as Map<String, dynamic>))
           .toList(),
       recentEmotionalState: json['recent_emotional_state'] as String?,
-      totalConversations: json['total_conversations'] as int,
-      profileMaturity: json['profile_maturity'] as String,
-      lastUpdated: DateTime.parse(json['last_updated'] as String),
+      totalConversations: json['total_conversations'] as int? ?? 0,
+      profileMaturity: json['profile_maturity'] as String? ?? 'new',
+      lastUpdated: json['last_updated'] != null
+          ? DateTime.parse(json['last_updated'] as String)
+          : DateTime.now(),
     );
   }
 }

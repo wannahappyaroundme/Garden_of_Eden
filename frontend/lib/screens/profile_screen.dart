@@ -73,35 +73,52 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ),
         error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Colors.red,
-              ),
-              const SizedBox(height: UIConstants.spacingLG),
-              Text(
-                error.toString(),
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: UIConstants.fontBody,
+          child: Padding(
+            padding: const EdgeInsets.all(UIConstants.spacingXL),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: Colors.red,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: UIConstants.spacingLG),
-              ElevatedButton(
-                onPressed: () {
-                  ref.read(profileProvider.notifier).loadProfile(widget.userId);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(UIConstants.electricCyan),
-                  foregroundColor: Colors.black,
+                const SizedBox(height: UIConstants.spacingLG),
+                const Text(
+                  '프로필을 불러오지 못했습니다',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: UIConstants.fontTitle,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                child: const Text('다시 시도'),
-              ),
-            ],
+                const SizedBox(height: UIConstants.spacingSM),
+                Text(
+                  _formatError(error),
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: UIConstants.fontBody,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: UIConstants.spacingXL),
+                ElevatedButton(
+                  onPressed: () {
+                    ref.read(profileProvider.notifier).loadProfile(widget.userId);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(UIConstants.electricCyan),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: UIConstants.spacingXL,
+                      vertical: UIConstants.spacingMD,
+                    ),
+                  ),
+                  child: const Text('다시 시도'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -365,6 +382,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       return '${difference.inDays}일 전';
     } else {
       return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
+    }
+  }
+
+  String _formatError(Object error) {
+    final errorStr = error.toString().toLowerCase();
+
+    if (errorStr.contains('socket') || errorStr.contains('network') || errorStr.contains('connection')) {
+      return '네트워크 연결을 확인해주세요';
+    } else if (errorStr.contains('timeout')) {
+      return '서버 응답 시간이 초과되었습니다';
+    } else if (errorStr.contains('404') || errorStr.contains('not found')) {
+      return '프로필 데이터를 찾을 수 없습니다';
+    } else if (errorStr.contains('500') || errorStr.contains('server')) {
+      return '서버 오류가 발생했습니다';
+    } else {
+      return '오류: ${error.toString()}';
     }
   }
 }
