@@ -2,7 +2,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../utils/constants.dart';
 import '../theme/app_theme.dart';
 
@@ -49,39 +48,36 @@ class _PushToTalkButtonState extends State<PushToTalkButton> {
           widget.onPressEnd();
         }
       },
-      child: AnimatedContainer(
-        duration: UIConstants.animQuick,
-        width: UIConstants.pushToTalkButtonSize,
-        height: UIConstants.pushToTalkButtonSize,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: color,
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.5),
-              blurRadius: 30,
-              spreadRadius: widget.mode == AppMode.listening ? 15 : 5,
-            ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.8),
-              blurRadius: 10,
-              spreadRadius: 0,
-            ),
-          ],
-        ),
-        child: Icon(
-          icon,
-          size: UIConstants.pushToTalkIconSize,
-          color: Colors.white,
-        ),
-      )
-          .animate(
-            target: widget.mode == AppMode.listening ? 1 : 0,
-          )
-          .scale(
-            duration: 600.ms,
-            curve: Curves.elasticOut,
+      child: AnimatedScale(
+        scale: widget.mode == AppMode.listening ? 1.1 : 1.0,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.elasticOut,
+        child: Container(
+          width: UIConstants.pushToTalkButtonSize,
+          height: UIConstants.pushToTalkButtonSize,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color,
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.5),
+                blurRadius: 30,
+                spreadRadius: widget.mode == AppMode.listening ? 15 : 5,
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.8),
+                blurRadius: 10,
+                spreadRadius: 0,
+              ),
+            ],
           ),
+          child: Icon(
+            icon,
+            size: UIConstants.pushToTalkIconSize,
+            color: Colors.white,
+          ),
+        ),
+      ),
     );
   }
 }

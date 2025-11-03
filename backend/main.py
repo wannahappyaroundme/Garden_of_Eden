@@ -8,15 +8,17 @@ from datetime import datetime
 from typing import List, Optional
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from PIL import Image
 import io
 
 from services.dynamodb_service_v2 import DynamoDBService
+from services.memory_db_service import MemoryDBService
 from services.llm_gemini_v2 import GeminiService
 from services.stt_service import STTService
 from services.tts_service import TTSService
@@ -57,13 +59,17 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Project Eden V2 Backend...")
 
     try:
-        # Initialize services
-        db_service = DynamoDBService(
-            region_name=os.getenv("AWS_REGION", "us-east-1"),
-            profiles_table_name=os.getenv("DYNAMODB_PROFILES_TABLE", "eden_user_profiles_v2"),
-            conversations_table_name=os.getenv("DYNAMODB_CONVERSATIONS_TABLE", "eden_conversations_raw"),
-            learning_events_table_name=os.getenv("DYNAMODB_LEARNING_EVENTS_TABLE", "eden_learning_events")
-        )
+        # Initialize services - Use memory DB for local testing
+        use_local = os.getenv("USE_LOCAL_DYNAMODB", "true").lower() == "true"
+        if use_local:
+            db_service = MemoryDBService()
+        else:
+            db_service = DynamoDBService(
+                region_name=os.getenv("AWS_REGION", "us-east-1"),
+                profiles_table_name=os.getenv("DYNAMODB_PROFILES_TABLE", "eden_user_profiles_v2"),
+                conversations_table_name=os.getenv("DYNAMODB_CONVERSATIONS_TABLE", "eden_conversations_raw"),
+                learning_events_table_name=os.getenv("DYNAMODB_LEARNING_EVENTS_TABLE", "eden_learning_events")
+            )
 
         llm_service = GeminiService(api_key=os.getenv("GEMINI_API_KEY"))
         stt_service = STTService(api_key=os.getenv("GROQ_API_KEY"))
@@ -161,11 +167,11 @@ async def health_check():
 @app.post("/api/v2/chat", response_model=ChatResponse, tags=["Chat"])
 async def chat(
     user_id: str = Form(...),
-    message: str = Form(...),
+    message: str = Form(""),
     voice_type: str = Form(...),
     session_id: Optional[str] = Form(None),
     audio_file: Optional[UploadFile] = File(None),
-    camera_frames: Optional[List[UploadFile]] = File(None),
+    camera_frames: List[UploadFile] = File(default=[]),
     processor: MasterDirectiveProcessor = Depends(get_master_processor)
 ):
     """
@@ -193,7 +199,7 @@ async def chat(
 
         # Process camera frames if provided
         images = []
-        if camera_frames:
+        if camera_frames and len(camera_frames) > 0:
             for frame in camera_frames[:8]:  # Max 8 frames
                 try:
                     image_bytes = await frame.read()
@@ -359,6 +365,16 @@ async def transcribe_audio(
 
 
 # ==================== Error Handlers ====================
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Handle validation errors with detailed logging"""
+    logger.error(f"Validation error on {request.method} {request.url}")
+    logger.error(f"Errors: {exc.errors()}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()}
+    )
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):

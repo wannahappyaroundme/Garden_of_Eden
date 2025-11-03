@@ -233,12 +233,17 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
             ),
           ),
 
-          // 4. Push-to-talk button (center)
-          Center(
-            child: PushToTalkButton(
-              mode: appState.mode,
-              onPressStart: _startRecording,
-              onPressEnd: _stopRecordingAndSend,
+          // 4. Push-to-talk button (bottom center)
+          Positioned(
+            bottom: 100,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: PushToTalkButton(
+                mode: appState.mode,
+                onPressStart: _startRecording,
+                onPressEnd: _stopRecordingAndSend,
+              ),
             ),
           ),
 

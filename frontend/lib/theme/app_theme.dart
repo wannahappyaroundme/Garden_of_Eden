@@ -114,7 +114,7 @@ class AppTheme {
   static Color getColorForMode(AppMode mode) {
     switch (mode) {
       case AppMode.idle:
-        return Color(UIConstants.electricCyan).withValues(alpha: 0.9);
+        return Color(UIConstants.midGrey).withValues(alpha: 0.8);
       case AppMode.listening:
         return Color(UIConstants.stateListening).withValues(alpha: 0.8);
       case AppMode.processing:
