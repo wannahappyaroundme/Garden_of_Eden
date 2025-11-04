@@ -111,7 +111,7 @@ EC2 인스턴스에 방화벽 규칙 추가:
    ssh -i ~/.ssh/Eden_Key.pem ubuntu@3.39.177.218
 
    # 예시:
-   # ssh -i ~/.ssh/eden-key.pem ubuntu@3.35.123.45
+   # ssh -i ~/.ssh/eden-key.pem ubuntu@3.39.177.218
    ```
 
 3. **서버에서 환경 설정**
@@ -159,7 +159,7 @@ cd Garden_of_Eden/backend
 ```bash
 # 로컬 Mac에서 실행
 cd /Users/kyungsbook/Desktop
-scp -i ~/.ssh/eden-key.pem -r Garden_of_Eden ubuntu@YOUR_PUBLIC_IP:~/
+scp -i ~/.ssh/eden-key.pem -r Garden_of_Eden ubuntu@3.39.177.218:~/
 ```
 
 ---
@@ -208,7 +208,7 @@ source venv/bin/activate
 uvicorn main:app --host 0.0.0.0 --port 8000
 
 # 다른 터미널에서 테스트:
-curl http://YOUR_PUBLIC_IP:8000/health
+curl http://3.39.177.218:8000/health
 
 # 작동하면 Ctrl+C로 종료
 ```
