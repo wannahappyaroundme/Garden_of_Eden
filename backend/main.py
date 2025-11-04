@@ -172,10 +172,11 @@ async def chat(
     session_id: Optional[str] = Form(None),
     audio_file: Optional[UploadFile] = File(None),
     camera_frames: List[UploadFile] = File(default=[]),
+    wifi_available: bool = Form(default=False),
     processor: MasterDirectiveProcessor = Depends(get_master_processor)
 ):
     """
-    Main chat endpoint - processes conversation through Master Directive system
+    Main chat endpoint - processes conversation through Master Directive system with RAG and WebSearch
 
     Args:
         user_id: User ID
@@ -184,6 +185,7 @@ async def chat(
         session_id: Optional session ID for multi-turn
         audio_file: Optional audio file for voice tone analysis
         camera_frames: Optional camera frames (up to 8)
+        wifi_available: Whether WiFi is connected (enables WebSearch)
 
     Returns:
         ChatResponse with AI response, TTS audio, and metadata
@@ -197,6 +199,13 @@ async def chat(
         except ValueError:
             raise HTTPException(status_code=400, detail=f"Invalid voice_type: {voice_type}. Must be 'adam' or 'eve'")
 
+        # Validate message is not empty
+        if not message or message.strip() == "":
+            raise HTTPException(
+                status_code=400,
+                detail="Message cannot be empty. Please ensure STT transcription result is passed to this endpoint."
+            )
+
         # Process camera frames if provided
         images = []
         if camera_frames and len(camera_frames) > 0:
@@ -208,14 +217,15 @@ async def chat(
                 except Exception as e:
                     logger.warning(f"Failed to process camera frame: {e}")
 
-        # Process conversation
+        # Process conversation with RAG and WebSearch
         response = await processor.process_conversation(
             user_id=user_id,
             message=message,
             voice_type=persona,
             session_id=session_id,
             camera_frames=images if images else None,
-            audio_file_path=None  # TODO: Save uploaded audio file
+            audio_file_path=None,  # TODO: Save uploaded audio file
+            wifi_available=wifi_available
         )
 
         return response

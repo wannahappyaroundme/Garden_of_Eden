@@ -104,17 +104,42 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
 
       // Set processing mode
       appState.setMode(AppMode.processing);
-      appState.setLoadingMessage('AI가 생각하는 중...');
+      appState.setLoadingMessage('음성을 텍스트로 변환하는 중...');
       appState.setRetryAttempt(0);
 
-      // Transcribe audio (optional - backend will do this)
-      // For now, we'll send empty message and let backend transcribe
-      final message = ''; // Backend will transcribe from audio
+      // Transcribe audio to text
+      String message;
+      try {
+        message = await apiService.transcribeAudio(
+          audioFile: audioFile,
+          language: 'ko',
+          onRetry: (attempt, error) {
+            appState.setRetryAttempt(attempt);
+            appState.setLoadingMessage('음성 인식 재시도 중... ($attempt/3)');
+          },
+        );
+
+        if (message.isEmpty) {
+          _showError('음성 인식 결과가 없습니다');
+          appState.setMode(AppMode.idle);
+          appState.clearLoadingMessage();
+          return;
+        }
+      } catch (e) {
+        _showError('음성 인식 실패: ${e.toString()}');
+        appState.setMode(AppMode.idle);
+        appState.clearLoadingMessage();
+        return;
+      }
+
+      // Update loading message for AI processing
+      appState.setLoadingMessage('AI가 생각하는 중...');
+      appState.setRetryAttempt(0);
 
       // Send to backend with retry callback
       final response = await apiService.sendChat(
         userId: widget.userId,
-        message: message,
+        message: message,  // Now contains actual transcription
         voiceType: currentState.persona,
         cameraFrames: cameraFrames,
         audioFile: audioFile,

@@ -139,6 +139,37 @@ class ApiService {
     );
   }
 
+  /// Transcribe audio file to text (STT)
+  Future<String> transcribeAudio({
+    required File audioFile,
+    String language = 'ko',
+    Function(int attempt, Exception error)? onRetry,
+  }) async {
+    return _retryableRequest<String>(
+      request: () async {
+        // Prepare form data
+        final formData = FormData.fromMap({
+          'language': language,
+          'audio_file': await MultipartFile.fromFile(
+            audioFile.path,
+            filename: 'audio.m4a',
+          ),
+        });
+
+        // Send request
+        final response = await _dio.post(
+          ApiConfig.sttEndpoint,
+          data: formData,
+        );
+
+        // Extract transcription text from response
+        final data = response.data as Map<String, dynamic>;
+        return data['transcription'] as String;
+      },
+      onRetry: onRetry,
+    );
+  }
+
   /// Get user profile (with retry)
   Future<UserProfile> getProfile(String userId) async {
     return _retryableRequest<UserProfile>(

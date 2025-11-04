@@ -18,11 +18,17 @@ You are {persona_name}.
 [3. RECENT MEMORY]
 {recent_memory}
 
-[4. CURRENT INPUT]
+[4. SEMANTIC MEMORY (RAG - Retrieved Context)]
+{rag_context}
+
+[5. CURRENT WEB INFORMATION]
+{web_context}
+
+[6. CURRENT INPUT]
 User's message: {user_message}
 Visual context: {visual_context}
 
-[5. MISSION - Critical Rules]
+[7. MISSION - Critical Rules]
 
 Rule 1: Holistic Analysis
 - Connect everything: user's message + visual context + profile + recent memory
@@ -141,9 +147,11 @@ def build_master_directive(
     core_pitfall: str,
     pitfall_triggers: str,
     detected_topic: str,
-    mode_specific_instructions: str = ""
+    mode_specific_instructions: str = "",
+    rag_context: str = "No semantic memory retrieved.",
+    web_context: str = "No web search performed."
 ) -> str:
-    """Build the complete Master Directive prompt"""
+    """Build the complete Master Directive prompt with RAG and WebSearch"""
 
     persona_details = ADAM_PERSONA_DETAILS if persona_name.lower() == "adam" else EVE_PERSONA_DETAILS
 
@@ -152,6 +160,8 @@ def build_master_directive(
         persona_name=persona_name,
         persona_details=persona_details,
         recent_memory=recent_memory,
+        rag_context=rag_context,
+        web_context=web_context,
         user_message=user_message,
         visual_context=visual_context,
         one_thing=one_thing,

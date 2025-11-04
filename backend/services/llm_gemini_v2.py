@@ -31,10 +31,23 @@ class GeminiService:
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY not found in environment variables")
 
+        logger.info(f"🔑 Gemini API Key loaded: {self.api_key[:20]}...")
         genai.configure(api_key=self.api_key)
 
-        # Use Gemini 1.5 Flash for speed and cost efficiency
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        # Use Gemini Flash (FREE tier model)
+        # Reference: https://ai.google.dev/pricing
+        try:
+            self.model = genai.GenerativeModel('gemini-2.5-flash')
+            logger.info("✅ Gemini model initialized: gemini-2.5-flash (FREE)")
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize gemini-2.5-flash: {e}")
+            # Try gemini-flash-latest as fallback
+            try:
+                self.model = genai.GenerativeModel('gemini-flash-latest')
+                logger.info("✅ Gemini model initialized: gemini-flash-latest (fallback)")
+            except Exception as e2:
+                logger.error(f"❌ Failed to initialize fallback model: {e2}")
+                raise
 
         logger.info("Gemini service initialized")
 
@@ -48,10 +61,12 @@ class GeminiService:
         pitfall_warning_mode: bool = False,
         pitfall_details: Optional[dict] = None,
         emotional_support_mode: bool = False,
-        emotional_details: Optional[dict] = None
+        emotional_details: Optional[dict] = None,
+        rag_context: str = "No semantic memory retrieved.",
+        web_context: str = "No web search performed."
     ) -> str:
         """
-        Generate AI response using Master Directive system
+        Generate AI response using Master Directive system with RAG and WebSearch
 
         Args:
             user_message: User's input text
@@ -63,6 +78,8 @@ class GeminiService:
             pitfall_details: Details about detected pitfall
             emotional_support_mode: Whether to activate supporter mode
             emotional_details: Details about emotional state
+            rag_context: Semantic memory from RAG search
+            web_context: Current web information from search
 
         Returns:
             AI response text in Korean
@@ -108,7 +125,7 @@ class GeminiService:
                     persona_name=persona_name
                 )
 
-            # Build complete Master Directive prompt
+            # Build complete Master Directive prompt with RAG and WebSearch
             master_directive = build_master_directive(
                 user_message=user_message,
                 user_profile_context=profile_context,
@@ -119,7 +136,9 @@ class GeminiService:
                 core_pitfall=core_pitfall,
                 pitfall_triggers=pitfall_triggers,
                 detected_topic=detected_topic,
-                mode_specific_instructions=mode_instructions
+                mode_specific_instructions=mode_instructions,
+                rag_context=rag_context,
+                web_context=web_context
             )
 
             # Prepare content for Gemini
@@ -132,12 +151,17 @@ class GeminiService:
 
             # Generate response
             logger.info(f"Generating {persona_name} response (pitfall={pitfall_warning_mode}, support={emotional_support_mode})")
+            logger.info(f"📝 Prompt length: {len(master_directive)} chars, Images: {len(camera_frames) if camera_frames else 0}")
 
-            response = self.model.generate_content(content_parts)
-            ai_response = response.text.strip()
-
-            logger.info(f"Generated response: {ai_response[:100]}...")
-            return ai_response
+            try:
+                response = self.model.generate_content(content_parts)
+                ai_response = response.text.strip()
+                logger.info(f"✅ Generated response: {ai_response[:100]}...")
+                return ai_response
+            except Exception as gen_error:
+                logger.error(f"❌ Gemini API Error: {gen_error}")
+                logger.error(f"Error type: {type(gen_error).__name__}")
+                raise
 
         except Exception as e:
             logger.error(f"Error generating response: {e}")

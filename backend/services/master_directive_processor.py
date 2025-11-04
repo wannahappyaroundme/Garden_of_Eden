@@ -10,12 +10,16 @@ from PIL import Image
 from models.user_profile import UserProfile
 from models.conversation import Conversation, ConversationMessage
 from models.api_schemas import ChatResponse
+from models.rag_models import RAGQuery
+from models.search_models import SearchQuery
 from services.dynamodb_service_v2 import DynamoDBService
 from services.llm_gemini_v2 import GeminiService
 from services.stt_service import STTService
 from services.tts_service import TTSService
 from services.profile_learning_service import ProfileLearningService
 from services.pitfall_detection_service import PitfallDetectionService
+from services.retrieval_augmented_generation_service import RAGService
+from services.web_search_service import WebSearchService
 from utils.logger import get_logger
 from utils.constants import PersonaType, LearningEventType
 
@@ -35,7 +39,7 @@ class MasterDirectiveProcessor:
         stt_service: STTService,
         tts_service: TTSService
     ):
-        """Initialize Master Directive Processor"""
+        """Initialize Master Directive Processor with RAG and WebSearch"""
         self.db = db_service
         self.llm = llm_service
         self.stt = stt_service
@@ -44,6 +48,22 @@ class MasterDirectiveProcessor:
         # Initialize sub-services
         self.learning_service = ProfileLearningService(llm_service, db_service)
         self.pitfall_service = PitfallDetectionService(llm_service)
+
+        # Initialize RAG service for semantic memory
+        try:
+            self.rag_service = RAGService(persist_directory="./chroma_db")
+            logger.info("✅ RAG service initialized")
+        except Exception as e:
+            logger.warning(f"⚠️ RAG service initialization failed: {e}. Continuing without RAG.")
+            self.rag_service = None
+
+        # Initialize WebSearch service
+        try:
+            self.web_search_service = WebSearchService()
+            logger.info("✅ WebSearch service initialized")
+        except Exception as e:
+            logger.warning(f"⚠️ WebSearch service initialization failed: {e}. Continuing without WebSearch.")
+            self.web_search_service = None
 
         logger.info("Master Directive Processor initialized")
 
@@ -54,19 +74,23 @@ class MasterDirectiveProcessor:
         voice_type: PersonaType,
         session_id: Optional[str] = None,
         camera_frames: Optional[List[Image.Image]] = None,
-        audio_file_path: Optional[str] = None
+        audio_file_path: Optional[str] = None,
+        wifi_available: bool = False
     ) -> ChatResponse:
         """
-        Process a complete conversation through the Master Directive system
+        Process a complete conversation through the Master Directive system with RAG and WebSearch
 
         Flow:
         1. Load user profile
-        2. Check for pitfall (benevolent dissent)
-        3. Detect emotional state
-        4. Generate persona-aware response
-        5. Generate TTS audio
-        6. Learn from conversation (async)
-        7. Return response
+        2. Load recent conversations
+        3. RAG semantic search for similar past conversations
+        4. WebSearch if WiFi available and query needs current info
+        5. Check for pitfall (benevolent dissent)
+        6. Detect emotional state
+        7. Generate persona-aware response with full context
+        8. Generate TTS audio
+        9. Learn from conversation and embed for RAG
+        10. Return response
 
         Args:
             user_id: User ID
@@ -75,6 +99,7 @@ class MasterDirectiveProcessor:
             session_id: Optional session ID for multi-turn
             camera_frames: Optional camera images
             audio_file_path: Optional audio file for voice tone analysis
+            wifi_available: Whether WiFi is connected (enables WebSearch)
 
         Returns:
             ChatResponse with AI response and metadata
@@ -90,7 +115,59 @@ class MasterDirectiveProcessor:
             # 2. Load recent conversations for context
             recent_conversations = await self.db.get_recent_conversations(user_id, limit=10)
 
-            # 3. Check for pitfall (benevolent dissent)
+            # 3. RAG: Semantic search for similar past conversations
+            rag_context_string = "No semantic memory retrieved."
+            if self.rag_service:
+                try:
+                    rag_query = RAGQuery(
+                        query_text=message,
+                        user_id=user_id,
+                        k=5,  # Top 5 similar conversations
+                        min_similarity=0.5
+                    )
+                    rag_results = await self.rag_service.search_similar_conversations(rag_query)
+
+                    if rag_results.retrieved_conversations:
+                        # Format RAG results for prompt
+                        rag_lines = [f"Found {rag_results.total_results} semantically similar past conversations:"]
+                        for i, conv in enumerate(rag_results.retrieved_conversations, 1):
+                            rag_lines.append(f"\n{i}. (Similarity: {conv.similarity_score:.2f}) {conv.created_at.strftime('%Y-%m-%d')}")
+                            rag_lines.append(f"   User: {conv.user_message[:100]}...")
+                            rag_lines.append(f"   AI: {conv.ai_response[:100]}...")
+
+                        rag_context_string = "\n".join(rag_lines)
+                        logger.info(f"🔍 RAG retrieved {rag_results.total_results} similar conversations")
+                except Exception as e:
+                    logger.warning(f"RAG search failed: {e}")
+
+            # 4. WebSearch: If WiFi available and query needs current info
+            web_context_string = "No web search performed."
+            if wifi_available and self.web_search_service:
+                try:
+                    # Check if search is needed
+                    search_decision = self.web_search_service.should_trigger_search(message)
+
+                    if search_decision.should_search:
+                        logger.info(f"🌐 Triggering web search: {search_decision.reason}")
+
+                        search_query = SearchQuery(
+                            query_text=message,
+                            max_results=3,
+                            search_depth="basic"
+                        )
+                        search_results = await self.web_search_service.search(search_query)
+
+                        if search_results.results:
+                            web_context_string = self.web_search_service.format_search_results_for_prompt(search_results)
+                            logger.info(f"🔍 WebSearch retrieved {search_results.total_results} results")
+                        else:
+                            web_context_string = "Web search performed but no results found."
+                    else:
+                        web_context_string = f"Web search not needed: {search_decision.reason}"
+                except Exception as e:
+                    logger.warning(f"WebSearch failed: {e}")
+
+            # 5. Check for pitfall (benevolent dissent)
             pitfall_check = await self.pitfall_service.check_for_pitfall(
                 user_message=message,
                 user_profile=profile
@@ -131,7 +208,7 @@ class MasterDirectiveProcessor:
                 # Track emotional support session
                 profile.meta_learning.emotional_support_sessions += 1
 
-            # 5. Generate AI response using Master Directive
+            # 7. Generate AI response using Master Directive with full context
             ai_response = await self.llm.generate_response(
                 user_message=message,
                 user_profile=profile,
@@ -141,7 +218,9 @@ class MasterDirectiveProcessor:
                 pitfall_warning_mode=pitfall_warning_triggered,
                 pitfall_details=pitfall_details,
                 emotional_support_mode=emotional_support_mode,
-                emotional_details=emotional_details
+                emotional_details=emotional_details,
+                rag_context=rag_context_string,
+                web_context=web_context_string
             )
 
             # 6. Generate TTS audio
@@ -179,6 +258,14 @@ class MasterDirectiveProcessor:
 
             # 8. Save conversation
             await self.db.save_conversation(conversation)
+
+            # 8.5. Embed conversation for RAG (semantic memory)
+            if self.rag_service:
+                try:
+                    await self.rag_service.embed_and_store_conversation(conversation)
+                    logger.info("✅ Conversation embedded for RAG")
+                except Exception as e:
+                    logger.warning(f"⚠️ Failed to embed conversation for RAG: {e}")
 
             # 9. Learn from conversation (async - don't wait)
             # In production, this would be a background task

@@ -2,7 +2,7 @@
 
 **A J.A.R.V.I.S.-like AI Partner That Deeply Understands You**
 
-Version: 2.1.0 | Status: **Production Ready** 🚀 | RAG + WebSearch Integrated ✅
+Version: 2.0.0 | Status: **Production Ready** 🚀 | All 7 Phases Complete ✅
 
 ---
 
@@ -17,8 +17,6 @@ Project Eden is NOT a chatbot. It's a **deeply personalized AI partner** that:
 - 🎭 **Adapts its personality** (Adam: logical/father-like, Eve: energetic/uplifting)
 - 📹 **Sees what you see** through camera integration
 - 🎤 **Listens to you** through voice-first interaction
-- 🔍 **Remembers semantically** - RAG searches your entire conversation history
-- 🌐 **Accesses current info** - WebSearch when WiFi available
 
 **This is J.A.R.V.I.S., not Siri.**
 
@@ -56,43 +54,6 @@ flutter run  # Connect device via USB first
 
 ---
 
-## 🚀 NEW: RAG + WebSearch Integration (v2.1)
-
-Project Eden V2 now has **enhanced memory and current information access**:
-
-### 🔍 RAG (Retrieval-Augmented Generation)
-- **Semantic search** over your entire conversation history
-- AI remembers relevant conversations from weeks/months ago
-- ChromaDB vector database with sentence-transformers embeddings
-- Top 5 similar conversations retrieved for each query
-
-**Example:** Asked about React 2 months ago? AI automatically recalls that context when you ask about state management today.
-
-### 🌐 WebSearch Integration
-- **Smart trigger detection** - automatically searches when query needs current info
-- **Dual providers**: Tavily API (primary) + DuckDuckGo (fallback)
-- Works when WiFi available (respects mobile data limits)
-- Top 3 results integrated into AI response
-
-**Example:** "2024년 최신 AI 트렌드는?" automatically triggers web search for current information.
-
-### Complete Context Flow
-```
-User Query
-   ↓
-[1] Profile (One Thing, Core Pitfall, traits)
-[2] Recent memory (last 10 conversations)
-[3] Semantic memory (RAG - top 5 similar from all history)
-[4] Web context (current info from search)
-[5] Camera frames (visual input)
-   ↓
-Master Directive → AI Response
-```
-
-See [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) for complete technical details.
-
----
-
 ## Core Innovation: Am-muk-ji Learning System
 
 Traditional AI stores conversations.
@@ -116,9 +77,7 @@ Example traits tracked:
 ### 1. Master Directive System
 Every AI response is filtered through:
 - Your profile (One Thing, Core Pitfall, traits)
-- Recent conversation memory (last 10 conversations)
-- **Semantic memory (RAG)** - Top 5 similar conversations from entire history
-- **Web context** - Current information from web search (when WiFi available)
+- Recent conversation memory
 - Current input (voice + camera + text)
 - Pitfall detection with alignment check
 - Emotional state detection
@@ -154,35 +113,13 @@ AI (Adam): "잠깐만요. SLAM은 흥미롭지만,
 - **Week 12**: Mature profile, AI "knows" you deeply
 - **Month 6+**: J.A.R.V.I.S.-level partnership
 
-### 5. RAG (Retrieval-Augmented Generation)
-
-AI searches your **entire conversation history** semantically:
-- Uses ChromaDB for vector storage (local persistence)
-- Sentence-transformers for embeddings (384-dim vectors)
-- Retrieves top 5 similar conversations (cosine similarity)
-- Provides context from weeks/months ago when relevant
-
-**Example:** If you asked about React 2 months ago, AI remembers that context when you ask about state management today.
-
-### 6. WebSearch Integration
-
-When WiFi is available and query needs current info:
-- **Primary**: Tavily API (high-quality results)
-- **Fallback**: DuckDuckGo (always available)
-- Smart trigger detection (keywords: "최신", "현재", "2024", "뉴스", etc.)
-- Top 3 results integrated into AI response
-
-**Example:** "2024년 최신 AI 트렌드는?" triggers web search automatically.
-
-### 7. Production Features
+### 5. Production Features
 
 - 🛡️ **Error Recovery**: Automatic retry with exponential backoff
 - 📝 **Smart Logging**: Track actions, API calls, performance
 - 💾 **Offline Support**: Cached profiles and settings
 - 🎨 **Polished UI**: Loading states, retry feedback, smooth transitions
 - ⚠️ **Pitfall Warnings**: Visual alerts when straying from goals
-- 🔍 **Semantic Memory**: RAG over all conversations
-- 🌐 **Current Info**: WebSearch integration
 
 ---
 
@@ -191,12 +128,9 @@ When WiFi is available and query needs current info:
 ### Backend
 - **Framework**: FastAPI (Python 3.12)
 - **Database**: DynamoDB (NoSQL) + Local in-memory
-- **Vector DB**: ChromaDB (for RAG semantic search)
-- **LLM**: Google Gemini 2.5 Flash (FREE, vision support)
+- **LLM**: Google Gemini 1.5 Flash (FREE, vision support)
 - **STT**: Groq Whisper Large v3 (FREE, 14,400 req/day)
-- **TTS**: Google TTS (gTTS) - FREE unlimited, Korean voices
-- **Embeddings**: Sentence-Transformers (all-MiniLM-L6-v2)
-- **WebSearch**: Tavily API + DuckDuckGo fallback
+- **TTS**: Edge TTS (FREE unlimited, Korean voices)
 
 ### Frontend
 - **Framework**: Flutter 3.35.7+
@@ -232,25 +166,17 @@ myai/
 │
 ├── backend/                     # FastAPI Backend
 │   ├── main.py                 # FastAPI app
-│   ├── services/               # Core services (9 services)
+│   ├── services/               # Core services (7 services)
 │   │   ├── master_directive_processor.py
 │   │   ├── profile_learning_service.py
 │   │   ├── pitfall_detection_service.py
 │   │   ├── llm_gemini_v2.py
 │   │   ├── stt_service.py
 │   │   ├── tts_service.py
-│   │   ├── dynamodb_service_v2.py
-│   │   ├── retrieval_augmented_generation_service.py  # NEW - RAG
-│   │   └── web_search_service.py                      # NEW - WebSearch
+│   │   └── dynamodb_service_v2.py
 │   ├── models/                 # Pydantic data models
-│   │   ├── user_profile.py
-│   │   ├── conversation.py
-│   │   ├── api_schemas.py
-│   │   ├── rag_models.py       # NEW - RAG data structures
-│   │   └── search_models.py    # NEW - WebSearch data structures
 │   ├── prompts/                # Master Directive prompts
 │   ├── utils/                  # Logger, constants
-│   ├── chroma_db/              # NEW - ChromaDB storage (local)
 │   ├── setup_local.sh          # Auto-setup script
 │   ├── start_local.sh          # Start script
 │   └── requirements.txt
@@ -429,7 +355,6 @@ Examples:
 
 ### Main Docs
 - **This README**: Project overview and quick start
-- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)**: RAG & WebSearch implementation details
 - **[DEPLOYMENT.md](DEPLOYMENT.md)**: Comprehensive deployment guide (6,000+ words)
 - **[PROJECT_EDEN_V2_MASTER_SPEC.md](PROJECT_EDEN_V2_MASTER_SPEC.md)**: Complete specification
 - **[backend/README.md](backend/README.md)**: Backend documentation
@@ -471,22 +396,13 @@ flutter analyze
 
 ---
 
-## Get API Keys
+## Get API Keys (All FREE)
 
-### Required (FREE)
 1. **Google Gemini**: https://ai.google.dev/
 2. **Groq (Whisper)**: https://console.groq.com/
+3. **AWS** (optional): https://aws.amazon.com/
 
-### Optional
-3. **Tavily** (for premium WebSearch): https://tavily.com/ - FREE tier: 1,000 searches/month
-4. **AWS** (for production deployment): https://aws.amazon.com/
-
-Update `backend/.env` with your keys:
-```bash
-GEMINI_API_KEY=your_key_here
-GROQ_API_KEY=your_key_here
-TAVILY_API_KEY=your_key_here  # Optional - DuckDuckGo used as fallback
-```
+Update `backend/.env` with your keys.
 
 ---
 
@@ -548,4 +464,4 @@ Private project - Not for distribution
 
 ---
 
-**Built with**: FastAPI • Flutter • Gemini • Riverpod • DynamoDB • ChromaDB • Groq Whisper • Tavily
+**Built with**: FastAPI • Flutter • Gemini • Riverpod • DynamoDB • Edge TTS • Groq Whisper
