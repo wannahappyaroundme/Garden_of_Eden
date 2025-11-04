@@ -1,7 +1,7 @@
 # ✅ Phase 4: Automated Setup Complete!
 
 **Date**: 2025-11-02
-**Status**: All automated setup and debugging完료
+**Status**: All automated setup and debugging 完료
 **Progress**: Ready for manual testing with device
 
 ---
@@ -11,17 +11,20 @@
 ### ✅ Backend Setup (100%)
 
 #### 1. Python Virtual Environment
+
 - **Status**: ✅ Created successfully
-- **Location**: `/Users/kyungsbook/Desktop/myai/backend/venv`
+- **Location**: `/Users/kyungsbook/Desktop/Garden_of_Eden/backend/venv`
 - **Python Version**: 3.11.13
 
 #### 2. Dependencies Installation
+
 - **Status**: ✅ All installed
 - **Issue Found**: `pytest==8.0.0` conflict with `pytest-asyncio==0.23.4`
 - **Fix Applied**: Changed to `pytest>=7.0.0,<8.0.0`
 - **Result**: All 80+ packages installed successfully
 
 **Installed Packages**:
+
 - FastAPI 0.109.2
 - Uvicorn 0.27.1
 - Pydantic 2.6.1
@@ -32,8 +35,9 @@
 - And 70+ more dependencies
 
 #### 3. Environment Configuration
+
 - **Status**: ✅ `.env` file created
-- **Location**: `/Users/kyungsbook/Desktop/myai/backend/.env`
+- **Location**: `/Users/kyungsbook/Desktop/Garden_of_Eden/backend/.env`
 - **Configuration**:
   ```env
   GEMINI_API_KEY=test_key_for_development
@@ -46,6 +50,7 @@
   ```
 
 #### 4. Code Verification
+
 - **Status**: ✅ All imports working
 - **main.py**: ✅ Syntax valid
 - **Import Test**: ✅ `from main import app` successful
@@ -56,12 +61,14 @@
 ### ✅ Frontend Setup (100%)
 
 #### 1. Flutter Dependencies
+
 - **Status**: ✅ All installed
 - **Command**: `flutter pub get`
 - **Result**: Got dependencies successfully
 - **Note**: 31 packages have newer versions (not blocking)
 
 **Key Packages**:
+
 - flutter_riverpod 2.6.1
 - camera 0.10.5+9
 - record 5.0.4
@@ -72,11 +79,13 @@
 - flutter_animate 4.5.0
 
 #### 2. Code Analysis
+
 - **Status**: ✅ No issues found
 - **Issue Fixed**: `test/widget_test.dart` - Updated to match new app structure
 - **Result**: `flutter analyze` - **No issues found!**
 
 #### 3. IP Configuration
+
 - **Status**: ✅ Updated automatically
 - **Local IP Detected**: `192.168.219.109`
 - **File Updated**: `frontend/lib/utils/constants.dart`
@@ -121,13 +130,16 @@
 ## 🔧 Issues Found & Fixed
 
 ### Issue 1: pytest Version Conflict ✅ FIXED
+
 **Error**:
+
 ```
 ERROR: pytest==8.0.0 conflicts with pytest-asyncio==0.23.4
 pytest-asyncio 0.23.4 depends on pytest<8 and >=7.0.0
 ```
 
 **Fix**:
+
 - Changed `requirements.txt` line 34
 - From: `pytest==8.0.0`
 - To: `pytest>=7.0.0,<8.0.0`
@@ -137,12 +149,15 @@ pytest-asyncio 0.23.4 depends on pytest<8 and >=7.0.0
 ---
 
 ### Issue 2: Flutter Widget Test Error ✅ FIXED
+
 **Error**:
+
 ```
 error • The name 'MyApp' isn't a class • test/widget_test.dart:16:35
 ```
 
 **Fix**:
+
 - Updated `test/widget_test.dart`
 - Changed `MyApp()` to `EdenApp()`
 - Wrapped in `ProviderScope`
@@ -154,11 +169,13 @@ error • The name 'MyApp' isn't a class • test/widget_test.dart:16:35
 ## 📁 Files Created/Modified
 
 ### Created Files (3)
+
 1. `backend/venv/` - Python virtual environment
 2. `backend/.env` - Environment configuration
 3. `PHASE_4_AUTOMATED_SETUP_COMPLETE.md` - This file
 
 ### Modified Files (2)
+
 1. `backend/requirements.txt` - Fixed pytest version
 2. `frontend/test/widget_test.dart` - Updated test to match new app
 3. `frontend/lib/utils/constants.dart` - Updated IP address
@@ -168,6 +185,7 @@ error • The name 'MyApp' isn't a class • test/widget_test.dart:16:35
 ## 🚀 What's Ready
 
 ### Backend Ready ✅
+
 - [x] Virtual environment created
 - [x] All dependencies installed
 - [x] .env configured
@@ -175,6 +193,7 @@ error • The name 'MyApp' isn't a class • test/widget_test.dart:16:35
 - [x] Ready to start with: `source venv/bin/activate && python main.py`
 
 ### Frontend Ready ✅
+
 - [x] All dependencies installed
 - [x] Code analysis passed
 - [x] IP configured for local network
@@ -185,6 +204,7 @@ error • The name 'MyApp' isn't a class • test/widget_test.dart:16:35
 ## ⏸️ What Requires Manual Action
 
 ### To Test Backend:
+
 ```bash
 cd backend
 source venv/bin/activate
@@ -192,6 +212,7 @@ python main.py
 ```
 
 **Expected**:
+
 ```
 INFO:     Started server process
 INFO:     Waiting for application startup.
@@ -200,6 +221,7 @@ INFO:     Uvicorn running on http://0.0.0.0:8000
 ```
 
 ### To Test Frontend:
+
 ```bash
 # 1. Connect physical device via USB
 # 2. Check device is detected:
@@ -217,6 +239,7 @@ flutter run
 ## 📝 Testing Checklist
 
 ### Backend Tests (Can Do Without Device)
+
 - [ ] Start backend: `python main.py`
 - [ ] Test health endpoint: `curl http://localhost:8000/health`
 - [ ] Test API docs: Open `http://localhost:8000/docs`
@@ -224,6 +247,7 @@ flutter run
 - [ ] Send test chat message
 
 ### Frontend Tests (Need Physical Device)
+
 - [ ] Connect iPhone/iPad or Android phone
 - [ ] Verify device: `flutter devices`
 - [ ] Run app: `flutter run`
@@ -237,6 +261,7 @@ flutter run
 ## 🎯 Next Steps
 
 ### Option 1: Test Backend Only (No Device Needed)
+
 ```bash
 cd backend
 source venv/bin/activate
@@ -251,6 +276,7 @@ curl http://localhost:8000/health
 ---
 
 ### Option 2: Get API Keys and Test Full Backend
+
 ```bash
 # 1. Get Gemini API key from https://ai.google.dev/
 # 2. Get Groq API key from https://console.groq.com/
@@ -263,6 +289,7 @@ curl http://localhost:8000/health
 ---
 
 ### Option 3: Full Stack Test (Need Device)
+
 ```bash
 # Terminal 1: Backend
 cd backend
@@ -282,6 +309,7 @@ flutter run
 ## 💡 Quick Commands
 
 ### Backend
+
 ```bash
 # Activate environment
 cd backend && source venv/bin/activate
@@ -297,6 +325,7 @@ tail -f logs/app.log  # (when running)
 ```
 
 ### Frontend
+
 ```bash
 # Check device
 flutter devices
@@ -316,6 +345,7 @@ flutter analyze
 ## 📊 System Information
 
 ### Environment
+
 - **OS**: macOS Darwin 24.6.0
 - **Python**: 3.11.13
 - **Flutter**: 3.35.7 (stable)
@@ -323,16 +353,18 @@ flutter analyze
 - **Local IP**: 192.168.219.109
 
 ### Directories
-- **Project**: `/Users/kyungsbook/Desktop/myai`
-- **Backend**: `/Users/kyungsbook/Desktop/myai/backend`
-- **Frontend**: `/Users/kyungsbook/Desktop/myai/frontend`
-- **Venv**: `/Users/kyungsbook/Desktop/myai/backend/venv`
+
+- **Project**: `/Users/kyungsbook/Desktop/Garden_of_Eden`
+- **Backend**: `/Users/kyungsbook/Desktop/Garden_of_Eden/backend`
+- **Frontend**: `/Users/kyungsbook/Desktop/Garden_of_Eden/frontend`
+- **Venv**: `/Users/kyungsbook/Desktop/Garden_of_Eden/backend/venv`
 
 ---
 
 ## 🎉 Summary
 
 ### What Was Automated ✅
+
 1. ✅ Python virtual environment setup
 2. ✅ Backend dependencies installation (fixed conflicts)
 3. ✅ Environment configuration
@@ -342,6 +374,7 @@ flutter analyze
 7. ✅ IP configuration update
 
 ### Manual Steps Remaining ⏸️
+
 1. ⏸️ Get API keys (Gemini + Groq)
 2. ⏸️ Start backend server
 3. ⏸️ Connect physical device
@@ -349,6 +382,7 @@ flutter analyze
 5. ⏸️ Test first conversation
 
 ### Time Saved 🚀
+
 - **Automated**: ~30 minutes of setup
 - **Manual**: ~10 minutes remaining (mostly testing)
 
@@ -357,11 +391,13 @@ flutter analyze
 ## 🎓 What You Learned
 
 ### Technical Issues Solved
+
 1. **Dependency Conflicts**: pytest version mismatch
 2. **Test Compatibility**: Updated widget tests for new app structure
 3. **Network Configuration**: Auto-detected local IP for device testing
 
 ### Tools Verified Working
+
 1. ✅ Python 3.11.13 + pip
 2. ✅ Flutter 3.35.7 + Dart 3.9.2
 3. ✅ All backend dependencies (FastAPI, Gemini, Groq, etc.)

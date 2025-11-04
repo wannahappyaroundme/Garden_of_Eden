@@ -61,6 +61,7 @@ flutter run  # Connect device via USB first
 Project Eden V2 now has **enhanced memory and current information access**:
 
 ### 🔍 RAG (Retrieval-Augmented Generation)
+
 - **Semantic search** over your entire conversation history
 - AI remembers relevant conversations from weeks/months ago
 - ChromaDB vector database with sentence-transformers embeddings
@@ -69,6 +70,7 @@ Project Eden V2 now has **enhanced memory and current information access**:
 **Example:** Asked about React 2 months ago? AI automatically recalls that context when you ask about state management today.
 
 ### 🌐 WebSearch Integration
+
 - **Smart trigger detection** - automatically searches when query needs current info
 - **Dual providers**: Tavily API (primary) + DuckDuckGo (fallback)
 - Works when WiFi available (respects mobile data limits)
@@ -77,6 +79,7 @@ Project Eden V2 now has **enhanced memory and current information access**:
 **Example:** "2024년 최신 AI 트렌드는?" automatically triggers web search for current information.
 
 ### Complete Context Flow
+
 ```
 User Query
    ↓
@@ -99,11 +102,13 @@ Traditional AI stores conversations.
 **Eden V2 learns you like a human mentor would.**
 
 The AI builds a living profile with **weighted personality traits**:
+
 - Traits observed frequently → weight increases (0.5 → 0.9)
 - Traits not reinforced → weight decays (0.8 → 0.6)
 - AI gets "smarter" about you over time
 
 Example traits tracked:
+
 - `perfectionist` (weight: 0.87)
 - `night_owl` (weight: 0.93)
 - `visual_learner` (weight: 0.76)
@@ -114,7 +119,9 @@ Example traits tracked:
 ## Key Features
 
 ### 1. Master Directive System
+
 Every AI response is filtered through:
+
 - Your profile (One Thing, Core Pitfall, traits)
 - Recent conversation memory (last 10 conversations)
 - **Semantic memory (RAG)** - Top 5 similar conversations from entire history
@@ -124,9 +131,11 @@ Every AI response is filtered through:
 - Emotional state detection
 
 ### 2. Benevolent Dissent
+
 When you ask about something that triggers your **Core Pitfall**, AI intervenes:
 
 **Example:**
+
 ```
 User: "Should I learn SLAM algorithms?"
 AI (Adam): "잠깐만요. SLAM은 흥미롭지만,
@@ -138,11 +147,13 @@ AI (Adam): "잠깐만요. SLAM은 흥미롭지만,
 ### 3. Dual Personas
 
 **Adam (아담)**
+
 - Male voice, logical, father-like
 - Uses questions to guide thinking
 - Direct but caring
 
 **Eve (이브)**
+
 - Female voice, energetic, uplifting
 - Celebrates and validates warmly
 - Makes you feel good naturally
@@ -157,6 +168,7 @@ AI (Adam): "잠깐만요. SLAM은 흥미롭지만,
 ### 5. RAG (Retrieval-Augmented Generation)
 
 AI searches your **entire conversation history** semantically:
+
 - Uses ChromaDB for vector storage (local persistence)
 - Sentence-transformers for embeddings (384-dim vectors)
 - Retrieves top 5 similar conversations (cosine similarity)
@@ -167,6 +179,7 @@ AI searches your **entire conversation history** semantically:
 ### 6. WebSearch Integration
 
 When WiFi is available and query needs current info:
+
 - **Primary**: Tavily API (high-quality results)
 - **Fallback**: DuckDuckGo (always available)
 - Smart trigger detection (keywords: "최신", "현재", "2024", "뉴스", etc.)
@@ -189,6 +202,7 @@ When WiFi is available and query needs current info:
 ## Technical Stack
 
 ### Backend
+
 - **Framework**: FastAPI (Python 3.12)
 - **Database**: DynamoDB (NoSQL) + Local in-memory
 - **Vector DB**: ChromaDB (for RAG semantic search)
@@ -199,6 +213,7 @@ When WiFi is available and query needs current info:
 - **WebSearch**: Tavily API + DuckDuckGo fallback
 
 ### Frontend
+
 - **Framework**: Flutter 3.35.7+
 - **State**: Riverpod 3.0
 - **Platform**: iOS & Android
@@ -208,6 +223,7 @@ When WiFi is available and query needs current info:
 - **Error Handling**: Global error boundary
 
 ### Infrastructure
+
 - **Deployment**: Docker + AWS ECS/Fargate (optional)
 - **Cost**: ~$0/month (local) or ~$15-45/month (AWS production)
 
@@ -216,7 +232,7 @@ When WiFi is available and query needs current info:
 ## Project Structure
 
 ```
-myai/
+Garden_of_Eden/
 ├── README.md                    # This file
 ├── DEPLOYMENT.md                # Comprehensive deployment guide
 ├── PROJECT_EDEN_V2_MASTER_SPEC.md  # Complete specification
@@ -291,6 +307,7 @@ myai/
 ## App Features
 
 ### Main Screen (Voice-First)
+
 - **Push-to-Talk**: Press and hold microphone button to record
 - **Persona Toggle**: Switch between Adam and Eve
 - **Camera View**: Full-screen camera with 1 FPS capture
@@ -299,12 +316,14 @@ myai/
 - **Loading States**: Animated feedback during processing
 
 ### Profile Screen
+
 - View your "One Thing" and "Core Pitfall"
 - See personality traits with weights
 - View conversation stats and maturity level
 - Track profile evolution over time
 
 ### Settings Screen
+
 - Adjust TTS volume
 - Enable/disable camera
 - Select default persona (Adam/Eve)
@@ -315,19 +334,20 @@ myai/
 
 ## Development Phases - ALL COMPLETE ✅
 
-| Phase | Focus | Status |
-|-------|-------|--------|
-| **Phase 1** | Backend Core - FastAPI, DynamoDB, LLM, STT/TTS | ✅ Complete |
-| **Phase 2** | Flutter Mobile App - Voice-first UI, camera, audio | ✅ Complete |
-| **Phase 3** | Platform Configuration - iOS/Android permissions | ✅ Complete |
-| **Phase 4** | Automated Setup - Scripts, environment setup | ✅ Complete |
-| **Phase 5** | UI/UX Polish - Retry, loading, profile, settings | ✅ Complete |
-| **Phase 6** | Integration & Polish - Navigation, transitions | ✅ Complete |
+| Phase       | Focus                                                | Status      |
+| ----------- | ---------------------------------------------------- | ----------- |
+| **Phase 1** | Backend Core - FastAPI, DynamoDB, LLM, STT/TTS       | ✅ Complete |
+| **Phase 2** | Flutter Mobile App - Voice-first UI, camera, audio   | ✅ Complete |
+| **Phase 3** | Platform Configuration - iOS/Android permissions     | ✅ Complete |
+| **Phase 4** | Automated Setup - Scripts, environment setup         | ✅ Complete |
+| **Phase 5** | UI/UX Polish - Retry, loading, profile, settings     | ✅ Complete |
+| **Phase 6** | Integration & Polish - Navigation, transitions       | ✅ Complete |
 | **Phase 7** | Production Infrastructure - Errors, logging, caching | ✅ Complete |
 
 **Production Readiness: 80%** 🚀
 
 ✅ **Ready:**
+
 - Complete feature set (7 services, 3 screens, 10+ widgets)
 - Robust error handling with recovery
 - Offline capability with caching
@@ -336,6 +356,7 @@ myai/
 - Comprehensive documentation
 
 ⚠️ **Optional Enhancements:**
+
 - Device testing on various phones
 - App icon & splash screen
 - App Store listing materials
@@ -356,6 +377,7 @@ curl -X POST "http://localhost:8000/api/v2/chat" \
 ```
 
 **Response:**
+
 ```json
 {
   "conversation_id": "uuid",
@@ -389,12 +411,14 @@ cd frontend
 ```
 
 **Process:**
+
 1. ✅ Code analysis (`flutter analyze`)
 2. ✅ Run tests (`flutter test`)
 3. ✅ Build Android APK
 4. ✅ Build iOS (if on macOS)
 
 **Output:**
+
 - Android: `build/app/outputs/flutter-apk/app-release.apk`
 - iOS: `build/ios/Release-iphoneos/Runner.app`
 
@@ -405,6 +429,7 @@ cd frontend
 Every user has **ONE primary goal** that matters most.
 
 Examples:
+
 - "Get into SNU HCI Lab"
 - "Pass IELTS with 8.0"
 - "Launch my startup by June"
@@ -428,6 +453,7 @@ Examples:
 ## Documentation
 
 ### Main Docs
+
 - **This README**: Project overview and quick start
 - **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)**: RAG & WebSearch implementation details
 - **[DEPLOYMENT.md](DEPLOYMENT.md)**: Comprehensive deployment guide (6,000+ words)
@@ -435,10 +461,12 @@ Examples:
 - **[backend/README.md](backend/README.md)**: Backend documentation
 
 ### Phase Documentation
+
 - All phase completion reports in **[docs/archive/](docs/archive/)**
 - Historical implementation details and metrics
 
 ### API Documentation
+
 - **Interactive API Docs**: http://localhost:8000/docs (when server running)
 
 ---
@@ -460,6 +488,7 @@ flutter analyze
 ```
 
 ### Manual Testing Checklist
+
 1. Voice recording and transcription
 2. Persona switching (Adam/Eve)
 3. Profile viewing and updates
@@ -474,14 +503,17 @@ flutter analyze
 ## Get API Keys
 
 ### Required (FREE)
+
 1. **Google Gemini**: https://ai.google.dev/
 2. **Groq (Whisper)**: https://console.groq.com/
 
 ### Optional
+
 3. **Tavily** (for premium WebSearch): https://tavily.com/ - FREE tier: 1,000 searches/month
 4. **AWS** (for production deployment): https://aws.amazon.com/
 
 Update `backend/.env` with your keys:
+
 ```bash
 GEMINI_API_KEY=your_key_here
 GROQ_API_KEY=your_key_here
@@ -505,12 +537,14 @@ TAVILY_API_KEY=your_key_here  # Optional - DuckDuckGo used as fallback
 ### Backend Issues
 
 **"Port 8000 already in use"**
+
 ```bash
 lsof -ti:8000 | xargs kill
 cd backend && ./start_local.sh
 ```
 
 **"ModuleNotFoundError"**
+
 ```bash
 cd backend && ./setup_local.sh
 ```
@@ -518,6 +552,7 @@ cd backend && ./setup_local.sh
 ### Frontend Issues
 
 **Build errors**
+
 ```bash
 cd frontend
 flutter clean
@@ -526,6 +561,7 @@ flutter run
 ```
 
 **No devices found**
+
 - Connect phone via USB
 - Enable USB debugging (Android)
 - Trust computer (iOS)
@@ -542,7 +578,7 @@ Private project - Not for distribution
 
 ## Vision
 
-*"Project Eden is not a chatbot. It is a deeply personalized AI partner that understands you, learns from every interaction, and helps you achieve your One Thing while protecting you from distractions."*
+_"Project Eden is not a chatbot. It is a deeply personalized AI partner that understands you, learns from every interaction, and helps you achieve your One Thing while protecting you from distractions."_
 
 **All 7 development phases complete. Ready for production deployment.** 🚀
 

@@ -62,27 +62,32 @@ Project Eden V2 backend implements the **Master Directive System** - an AI compa
 ### Installation
 
 1. **Clone the repository**
+
 ```bash
 cd backend
 ```
 
 2. **Create virtual environment**
+
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
 3. **Install dependencies**
+
 ```bash
 pip install -r requirements.txt
 ```
 
 4. **Configure environment variables**
+
 ```bash
 cp .env.example .env
 ```
 
 Edit `.env` and add your API keys:
+
 ```env
 AWS_REGION=us-east-1
 AWS_ACCESS_KEY_ID=your_aws_key
@@ -98,21 +103,25 @@ DYNAMODB_LEARNING_EVENTS_TABLE=eden_learning_events
 ```
 
 5. **Create DynamoDB tables**
+
 ```bash
 python -m services.dynamodb_service_v2
 ```
 
 This creates 3 tables:
+
 - `eden_user_profiles_v2` (user profiles)
 - `eden_conversations_raw` (conversation logs)
 - `eden_learning_events` (learning history)
 
 6. **Run the server**
+
 ```bash
 python main.py
 ```
 
 Or with uvicorn:
+
 ```bash
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -137,6 +146,7 @@ Server will start at `http://localhost:8000`
 Process conversation through Master Directive system.
 
 **Request** (multipart/form-data):
+
 ```
 user_id: string (required)
 message: string (required)
@@ -147,6 +157,7 @@ camera_frames[]: file[] (optional, max 8)
 ```
 
 **Response**:
+
 ```json
 {
   "conversation_id": "uuid",
@@ -167,6 +178,7 @@ camera_frames[]: file[] (optional, max 8)
 Get user profile summary.
 
 **Response**:
+
 ```json
 {
   "user_id": "user_123",
@@ -175,8 +187,8 @@ Get user profile summary.
   "core_pitfall": "Competency Trap",
   "personality_summary": {
     "top_traits": [
-      {"name": "night_owl", "weight": 0.93},
-      {"name": "perfectionist", "weight": 0.87}
+      { "name": "night_owl", "weight": 0.93 },
+      { "name": "perfectionist", "weight": 0.87 }
     ]
   },
   "recent_emotional_state": "anxious (0.7)",
@@ -193,6 +205,7 @@ Get user profile summary.
 Manually update profile.
 
 **Request**:
+
 ```json
 {
   "one_thing": "New goal if changed",
@@ -214,6 +227,7 @@ Get profile learning history.
 Transcribe audio to text.
 
 **Request** (multipart/form-data):
+
 ```
 audio_file: file (required)
 language: string (default: "ko")
@@ -234,6 +248,7 @@ Check service health.
 Main orchestrator. Coordinates all services to process conversations.
 
 **Flow**:
+
 1. Load user profile
 2. Check for pitfall (benevolent dissent)
 3. Detect emotional state
@@ -247,6 +262,7 @@ Main orchestrator. Coordinates all services to process conversations.
 Implements Am-muk-ji (implicit knowledge) learning.
 
 **Weight Update Algorithm**:
+
 ```python
 def update_weight(current, evidence_strength, days_since_update):
     # Time decay
@@ -266,6 +282,7 @@ def update_weight(current, evidence_strength, days_since_update):
 Detects when user strays from their "One Thing".
 
 **Alignment Scoring**:
+
 - 1.0: Directly helps goal
 - 0.7-0.9: Indirectly related
 - 0.4-0.6: Tangentially related
@@ -287,6 +304,7 @@ Handles all LLM interactions.
 Manages all database operations.
 
 **Tables**:
+
 - User profiles (complex nested structure)
 - Conversations (full message history)
 - Learning events (profile update logs)
@@ -331,12 +349,14 @@ Every AI response goes through the Master Directive prompt:
 ## Personas
 
 ### Adam (아담)
+
 - Voice: `ko-KR-InJoonNeural` (male)
 - Style: Logical, structured, father-like
 - Approach: Uses questions to guide thinking
 - Example: "먼저 생각해봅시다. 이 선택이 목표와 어떻게 연결되나요?"
 
 ### Eve (이브)
+
 - Voice: `ko-KR-SunHiNeural` (female)
 - Style: Energetic, uplifting, enthusiastic
 - Approach: Positive reactions and celebrations
@@ -426,11 +446,13 @@ updated_profile = await service.learn_from_conversation(
 ## Monitoring & Logs
 
 Logs are written to:
+
 - Console (INFO level)
 - `logs/eden_errors.log` (ERROR level, rotated at 10MB)
 - `logs/eden_all.log` (DEBUG level, rotated at 50MB)
 
 View logs:
+
 ```bash
 tail -f logs/eden_all.log
 ```
@@ -440,12 +462,14 @@ tail -f logs/eden_all.log
 ## Performance
 
 **Target Latency**:
+
 - STT: < 2 seconds
 - LLM: < 3 seconds
 - TTS: < 1 second
 - Total: < 6 seconds
 
 **Scalability**:
+
 - 100 concurrent users per server
 - Auto-scales with ECS
 
@@ -476,8 +500,9 @@ python -c "from groq import Groq; client = Groq(api_key='YOUR_KEY'); print('✓ 
 ### Import Errors
 
 Make sure you're in the backend directory and virtual environment is activated:
+
 ```bash
-pwd  # Should be .../myai/backend
+pwd  # Should be .../Garden_of_Eden/backend
 which python  # Should show venv path
 ```
 

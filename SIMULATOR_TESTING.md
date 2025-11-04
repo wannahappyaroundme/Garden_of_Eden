@@ -11,11 +11,13 @@ Version: 1.0 | Last Updated: 2025-11-03
 ### iOS 시뮬레이터의 치명적 한계
 
 **작동하지 않는 기능:**
+
 - ❌ **오디오 녹음**: iOS 15/Xcode 15 이후 시뮬레이터에서 녹음 실패 (알려진 버그)
 - ❌ **카메라 프리뷰/캡처**: 하드웨어 제약으로 완전히 지원 안 됨
 - ❌ **멀티모달 테스트**: 음성+카메라 동시 테스트 불가능
 
 **작동하는 기능:**
+
 - ✅ **권한 프롬프트**: 정상 작동
 - ✅ **오디오 재생**: TTS 재생 가능
 - ✅ **UI/로직 테스트**: 화면 표시 및 상태 관리
@@ -25,12 +27,14 @@ Version: 1.0 | Last Updated: 2025-11-03
 ### Android 에뮬레이터 (권장)
 
 **작동하는 기능:**
+
 - ✅ **오디오 녹음**: 설정 후 정상 작동 (16kHz 권장)
 - ✅ **카메라**: Webcam 또는 Emulated 모드로 작동
 - ✅ **멀티모달 테스트**: 음성+카메라 동시 테스트 가능
 - ✅ **권한 프롬프트**: 정상 작동
 
 **알려진 제약:**
+
 - ⚠️ 가끔 오디오에 잡음 발생 가능
 - ⚠️ 카메라 화질은 실기기보다 낮음
 - ⚠️ 성능은 실기기보다 느림
@@ -61,6 +65,7 @@ flutter doctor
 ```
 
 **flutter doctor 출력 예시:**
+
 ```
 [✓] Flutter (Channel stable, 3.35.7)
 [✓] Android toolchain - develop for Android devices (Android SDK 34.0.0)
@@ -73,13 +78,14 @@ flutter doctor
 
 ### 하드웨어
 
-| 목적 | 필수/권장 | 기기 |
-|------|----------|------|
-| iOS 음성+카메라 테스트 | **필수** | iPhone 13+ 또는 iPhone SE 3세대 |
-| Android 테스트 | 권장 | 에뮬레이터로 대체 가능 |
-| 성능 테스트 | 권장 | 실기기 모두 |
+| 목적                   | 필수/권장 | 기기                            |
+| ---------------------- | --------- | ------------------------------- |
+| iOS 음성+카메라 테스트 | **필수**  | iPhone 13+ 또는 iPhone SE 3세대 |
+| Android 테스트         | 권장      | 에뮬레이터로 대체 가능          |
+| 성능 테스트            | 권장      | 실기기 모두                     |
 
 **예산 옵션:**
+
 - iPhone SE 3세대 (2022): ~$429 (Apple 공식)
 - 중고 iPhone 13: ~$300-400 (eBay/중고나라)
 
@@ -103,7 +109,7 @@ flutter doctor
 # Device Manager → ▶️ 버튼 클릭
 
 # 3. 앱 실행
-cd /Users/kyungsbook/Desktop/myai/frontend
+cd /Users/kyungsbook/Desktop/Garden_of_Eden/frontend
 flutter run
 # 기기 선택 프롬프트에서 Android 에뮬레이터 선택
 
@@ -126,7 +132,7 @@ flutter devices
 # 출력: iPhone (model) • <device-id> • ios • iOS 17.0
 
 # 4. 앱 실행
-cd /Users/kyungsbook/Desktop/myai/frontend
+cd /Users/kyungsbook/Desktop/Garden_of_Eden/frontend
 flutter run -d <device-id>
 # 또는 그냥 flutter run 후 기기 선택
 ```
@@ -142,7 +148,7 @@ xcrun simctl boot "iPhone 16e"
 open -a Simulator
 
 # 2. 앱 실행
-cd /Users/kyungsbook/Desktop/myai/frontend
+cd /Users/kyungsbook/Desktop/Garden_of_Eden/frontend
 flutter run
 # 시뮬레이터 자동 선택됨
 
@@ -166,6 +172,7 @@ xcrun simctl list devices | grep Booted
 ```
 
 **출력 예시:**
+
 ```
 -- iOS 17.0 --
     iPhone 15 (UUID-1234) (Shutdown)
@@ -207,6 +214,7 @@ xcrun simctl privacy booted list
 #### 시뮬레이터에서 테스트 가능한 것
 
 ✅ **가능:**
+
 - UI 레이아웃 및 반응형 디자인
 - 상태 관리 (Riverpod providers)
 - 네트워크 요청 (API 호출)
@@ -216,6 +224,7 @@ xcrun simctl privacy booted list
 - 페이지 전환 및 네비게이션
 
 ❌ **불가능:**
+
 - 오디오 녹음 (`record` 패키지 실패)
 - 카메라 프리뷰 (`availableCameras()` 빈 배열 반환)
 - 카메라 캡처
@@ -258,6 +267,7 @@ flutter devices
 ```
 
 **출력 예시:**
+
 ```
 Found 3 connected devices:
   iPhone 15 Pro (mobile) • 00008030-001234567890 • ios • iOS 17.0.1
@@ -268,7 +278,7 @@ Found 3 connected devices:
 #### Step 2: 앱 배포 및 실행
 
 ```bash
-cd /Users/kyungsbook/Desktop/myai/frontend
+cd /Users/kyungsbook/Desktop/Garden_of_Eden/frontend
 
 # 방법 1: 기기 ID로 직접 실행
 flutter run -d 00008030-001234567890
@@ -292,6 +302,7 @@ flutter run
 2. **마이크 권한**: "Eden이 마이크에 접근하려고 합니다" → [허용]
 
 **권한 거부 시 재요청:**
+
 ```
 설정 → Eden → 권한
 → 카메라 [켜기]
@@ -301,6 +312,7 @@ flutter run
 #### Step 4: 테스트 시나리오
 
 **전체 멀티모달 플로우:**
+
 ```
 1. 앱 실행
 2. 권한 허용 (카메라 + 마이크)
@@ -316,6 +328,7 @@ flutter run
 ```
 
 **개별 기능 테스트:**
+
 - 음성 녹음만: 카메라 꺼진 상태에서 테스트
 - 카메라만: 설정에서 카메라 활성화 후 프리뷰 확인
 - 페르소나 전환: Adam ↔ Eve 토글
@@ -438,6 +451,7 @@ Tools → Device Manager (또는 Tools → AVD Manager)
 **1. Create Virtual Device 클릭**
 
 **2. 하드웨어 선택:**
+
 ```
 Category: Phone
 Device: Pixel 7 (권장) 또는 Pixel 6
@@ -451,6 +465,7 @@ Device: Pixel 7 (권장) 또는 Pixel 6
 ```
 
 **3. 시스템 이미지 선택 (중요!):**
+
 ```
 Release Name: Tiramisu (API Level 33, Android 13)
 또는: S (API Level 31, Android 12)
@@ -465,6 +480,7 @@ Target: Google Play 또는 Google APIs
 ```
 
 **4. AVD 설정:**
+
 ```
 AVD Name: Pixel_7_API_33
 Startup orientation: Portrait
@@ -497,12 +513,12 @@ Multi-Core CPU: 4 cores (Apple Silicon M1/M2/M3 성능 활용)
 
 #### 시스템 이미지 선택 가이드
 
-| 시스템 이미지 | ABI | Apple Silicon 지원 | 성능 | 카메라 지원 |
-|-------------|-----|-------------------|------|-----------|
-| arm64-v8a + Google Play | arm64 | ✅ 네이티브 (빠름) | ⭐⭐⭐⭐⭐ | ✅ Webcam/Emulated |
-| arm64-v8a + Google APIs | arm64 | ✅ 네이티브 (빠름) | ⭐⭐⭐⭐⭐ | ✅ Webcam/Emulated |
-| x86_64 + Google Play | x86_64 | ⚠️ 에뮬레이션 (느림) | ⭐⭐ | ✅ Webcam/VirtualScene |
-| x86 | x86 | ❌ 지원 안 됨 | ❌ | ❌ |
+| 시스템 이미지           | ABI    | Apple Silicon 지원   | 성능       | 카메라 지원            |
+| ----------------------- | ------ | -------------------- | ---------- | ---------------------- |
+| arm64-v8a + Google Play | arm64  | ✅ 네이티브 (빠름)   | ⭐⭐⭐⭐⭐ | ✅ Webcam/Emulated     |
+| arm64-v8a + Google APIs | arm64  | ✅ 네이티브 (빠름)   | ⭐⭐⭐⭐⭐ | ✅ Webcam/Emulated     |
+| x86_64 + Google Play    | x86_64 | ⚠️ 에뮬레이션 (느림) | ⭐⭐       | ✅ Webcam/VirtualScene |
+| x86                     | x86    | ❌ 지원 안 됨        | ❌         | ❌                     |
 
 **권장: arm64-v8a + Google Play (API 33)**
 
@@ -570,6 +586,7 @@ macOS 설정:
 **Flutter 앱에서 16kHz 사용 (에뮬레이터 최적화):**
 
 현재 `audio_service.dart`에서:
+
 ```dart
 // 에뮬레이터 감지 후 샘플레이트 조정
 final config = RecordConfig(
@@ -580,6 +597,7 @@ final config = RecordConfig(
 ```
 
 **알려진 문제:**
+
 - 44100Hz 샘플레이트는 macOS Android 에뮬레이터에서 불안정
 - 16000Hz 사용 시 안정성 향상
 - 실기기에서는 44100Hz 사용 가능
@@ -590,12 +608,12 @@ final config = RecordConfig(
 
 #### Camera Mode 옵션
 
-| 모드 | 설명 | 사용 사례 |
-|------|------|----------|
-| **None** | 카메라 없음 | 카메라 불필요한 앱 |
-| **Emulated** | 소프트웨어 시뮬레이션 (테스트 패턴) | 기본 기능 테스트 |
-| **Webcam0** | Mac 웹캠 사용 | 실제 카메라 피드 테스트 |
-| **VirtualScene** | 가상 3D 환경 (AR용) | x86_64 이미지에서만 사용 가능 |
+| 모드             | 설명                                | 사용 사례                     |
+| ---------------- | ----------------------------------- | ----------------------------- |
+| **None**         | 카메라 없음                         | 카메라 불필요한 앱            |
+| **Emulated**     | 소프트웨어 시뮬레이션 (테스트 패턴) | 기본 기능 테스트              |
+| **Webcam0**      | Mac 웹캠 사용                       | 실제 카메라 피드 테스트       |
+| **VirtualScene** | 가상 3D 환경 (AR용)                 | x86_64 이미지에서만 사용 가능 |
 
 #### 권장 설정
 
@@ -614,12 +632,14 @@ Back camera: Emulated
 #### Webcam 사용 시 주의사항
 
 1. **macOS 카메라 권한:**
+
    ```
    시스템 설정 → 개인정보 보호 및 보안 → 카메라
    → "qemu-system-aarch64" 활성화
    ```
 
 2. **웹캠 해상도:**
+
    - Mac 웹캠이 1080p 이상이면 Flutter `camera` 패키지에서 자동 다운샘플링
    - 성능 문제 시 해상도 낮추기:
      ```dart
@@ -635,16 +655,19 @@ Back camera: Emulated
 #### Emulated 모드 (웹캠 없는 경우)
 
 **표시되는 것:**
+
 - 컬러 그리드 패턴
 - 움직이는 정사각형
 - 타임스탬프
 
 **장점:**
+
 - 웹캠 불필요
 - 카메라 API 동작 테스트 가능
 - 권한 처리 테스트 가능
 
 **단점:**
+
 - 실제 영상 처리 불가
 - 얼굴 인식 등 테스트 불가
 
@@ -687,7 +710,7 @@ Device Manager → Pixel_7_API_33 옆 ▶️ 버튼 클릭
 #### Flutter 앱 실행
 
 ```bash
-cd /Users/kyungsbook/Desktop/myai/frontend
+cd /Users/kyungsbook/Desktop/Garden_of_Eden/frontend
 
 # 기기 확인
 flutter devices
@@ -705,12 +728,14 @@ flutter run
 #### 앱 설치 확인
 
 **에뮬레이터에서:**
+
 ```
 1. 앱 아이콘이 홈 화면이나 앱 드로어에 표시됨
 2. 앱 이름: "Eden" 또는 "frontend" (pubspec.yaml 설정에 따라)
 ```
 
 **명령어로 확인:**
+
 ```bash
 # 설치된 앱 목록
 adb shell pm list packages | grep frontend
@@ -883,6 +908,7 @@ adb shell dumpsys batterystats com.example.frontend
 #### iOS (실기기 필수!)
 
 **테스트 시나리오:**
+
 ```
 1. 앱 실행 → 마이크 권한 허용
 2. 푸시-투-톡 버튼 길게 누르기
@@ -900,6 +926,7 @@ adb shell dumpsys batterystats com.example.frontend
 ```
 
 **디버그 로그 확인:**
+
 ```dart
 // frontend/lib/services/audio_service.dart
 // Logger 출력:
@@ -909,6 +936,7 @@ adb shell dumpsys batterystats com.example.frontend
 ```
 
 **알려진 문제:**
+
 - ❌ iOS 시뮬레이터에서 녹음 실패 (iOS 15+ 버그)
 - ✅ 실기기에서는 정상 작동
 
@@ -917,6 +945,7 @@ adb shell dumpsys batterystats com.example.frontend
 #### Android (에뮬레이터 가능)
 
 **테스트 시나리오:**
+
 ```
 1. 에뮬레이터 실행
 2. macOS 마이크 권한 확인 (시스템 설정)
@@ -933,6 +962,7 @@ adb shell dumpsys batterystats com.example.frontend
 ```
 
 **샘플레이트 확인:**
+
 ```dart
 // 현재 설정 (audio_service.dart)
 final config = RecordConfig(
@@ -945,6 +975,7 @@ final config = RecordConfig(
 ```
 
 **문제 해결:**
+
 ```bash
 # 문제: 녹음 시작 안 됨
 # 해결:
@@ -970,6 +1001,7 @@ adb pull /data/data/com.example.frontend/cache/audio.m4a ~/Desktop/
 #### iOS & Android (시뮬레이터/에뮬레이터 모두 가능)
 
 **테스트 시나리오:**
+
 ```
 1. 앱에서 AI 응답 수신
 2. TTS 오디오 자동 재생
@@ -983,6 +1015,7 @@ TTS 소스:
 ```
 
 **볼륨 테스트:**
+
 ```
 설정 화면 → TTS Volume 슬라이더
 - 0.0 (음소거)
@@ -993,6 +1026,7 @@ TTS 소스:
 ```
 
 **재생 상태 확인:**
+
 ```dart
 // frontend/lib/services/audio_service.dart
 // Logger 출력:
@@ -1002,6 +1036,7 @@ TTS 소스:
 ```
 
 **문제 해결:**
+
 ```bash
 # 문제: 오디오 재생 안 됨
 # iOS:
@@ -1024,14 +1059,14 @@ TTS 소스:
 
 ### 3.3 알려진 오디오 문제 및 해결책
 
-| 문제 | 플랫폼 | 원인 | 해결책 |
-|------|--------|------|--------|
-| 녹음 실패 | iOS 시뮬레이터 | iOS 15+ 시뮬레이터 버그 | ✅ 실기기 사용 필수 |
-| 녹음에 잡음 | Android 에뮬레이터 | 샘플레이트 불일치 | ✅ 16kHz로 변경 |
-| 마이크 접근 안 됨 | Android 에뮬레이터 | macOS 권한 없음 | ✅ 시스템 설정에서 권한 부여 |
-| 재생 안 됨 | 공통 | 볼륨 0 또는 음소거 | ✅ 볼륨 확인 |
-| TTS 음질 나쁨 | 시뮬레이터/에뮬레이터 | 스피커 시뮬레이션 | ✅ 실기기에서 테스트 |
-| 동시 녹음+재생 불가 | iOS 시뮬레이터 | AVAudioSession 제약 | ✅ 실기기 사용 |
+| 문제                | 플랫폼                | 원인                    | 해결책                       |
+| ------------------- | --------------------- | ----------------------- | ---------------------------- |
+| 녹음 실패           | iOS 시뮬레이터        | iOS 15+ 시뮬레이터 버그 | ✅ 실기기 사용 필수          |
+| 녹음에 잡음         | Android 에뮬레이터    | 샘플레이트 불일치       | ✅ 16kHz로 변경              |
+| 마이크 접근 안 됨   | Android 에뮬레이터    | macOS 권한 없음         | ✅ 시스템 설정에서 권한 부여 |
+| 재생 안 됨          | 공통                  | 볼륨 0 또는 음소거      | ✅ 볼륨 확인                 |
+| TTS 음질 나쁨       | 시뮬레이터/에뮬레이터 | 스피커 시뮬레이션       | ✅ 실기기에서 테스트         |
+| 동시 녹음+재생 불가 | iOS 시뮬레이터        | AVAudioSession 제약     | ✅ 실기기 사용               |
 
 ---
 
@@ -1042,6 +1077,7 @@ TTS 소스:
 #### iOS (실기기 필수!)
 
 **테스트 시나리오:**
+
 ```
 1. 앱 실행 → 카메라 권한 허용
 2. 전체 화면에 카메라 프리뷰 표시
@@ -1056,6 +1092,7 @@ TTS 소스:
 ```
 
 **디버그 로그:**
+
 ```dart
 // frontend/lib/services/camera_service.dart
 📷 Camera initialized: back camera
@@ -1064,6 +1101,7 @@ TTS 소스:
 ```
 
 **알려진 문제:**
+
 - ❌ iOS 시뮬레이터: `availableCameras()` 빈 배열 반환
 - ❌ iOS 시뮬레이터: CameraController 초기화 실패
 - ✅ 실기기: 정상 작동
@@ -1073,6 +1111,7 @@ TTS 소스:
 #### Android (에뮬레이터 가능)
 
 **테스트 시나리오 - Webcam 모드:**
+
 ```
 1. AVD 설정: Camera Back = Webcam0
 2. macOS 카메라 권한 허용
@@ -1087,6 +1126,7 @@ TTS 소스:
 ```
 
 **테스트 시나리오 - Emulated 모드:**
+
 ```
 1. AVD 설정: Camera Back = Emulated
 2. 에뮬레이터 실행
@@ -1105,6 +1145,7 @@ TTS 소스:
 ```
 
 **카메라 목록 확인:**
+
 ```bash
 # 에뮬레이터에서 사용 가능한 카메라
 adb shell pm list features | grep camera
@@ -1141,6 +1182,7 @@ Timer.periodic(Duration(seconds: 1), (timer) async {
 ```
 
 **테스트 시나리오:**
+
 ```
 1. 앱 실행 → 카메라 권한 허용
 2. 푸시-투-톡 버튼 길게 누르기 (5-8초)
@@ -1158,6 +1200,7 @@ Timer.periodic(Duration(seconds: 1), (timer) async {
 ```
 
 **캡처 품질 확인:**
+
 ```bash
 # Android: 캡처된 이미지 확인
 adb shell ls /data/data/com.example.frontend/cache/camera/
@@ -1169,6 +1212,7 @@ adb pull /data/data/com.example.frontend/cache/camera/frame_001.jpg ~/Desktop/
 ```
 
 **예상 결과:**
+
 - 파일명: `frame_001.jpg`, `frame_002.jpg`, ..., `frame_008.jpg`
 - 해상도: 1920x1080 (또는 설정된 해상도)
 - 용량: ~100-300 KB/프레임 (JPEG 압축)
@@ -1178,15 +1222,15 @@ adb pull /data/data/com.example.frontend/cache/camera/frame_001.jpg ~/Desktop/
 
 ### 4.3 알려진 카메라 문제 및 해결책
 
-| 문제 | 플랫폼 | 원인 | 해결책 |
-|------|--------|------|--------|
-| 카메라 없음 | iOS 시뮬레이터 | 하드웨어 제약 | ✅ 실기기 사용 필수 |
-| 프리뷰 느림 | Android 에뮬레이터 | 가상화 오버헤드 | ✅ Graphics: Hardware 설정 |
+| 문제              | 플랫폼             | 원인            | 해결책                       |
+| ----------------- | ------------------ | --------------- | ---------------------------- |
+| 카메라 없음       | iOS 시뮬레이터     | 하드웨어 제약   | ✅ 실기기 사용 필수          |
+| 프리뷰 느림       | Android 에뮬레이터 | 가상화 오버헤드 | ✅ Graphics: Hardware 설정   |
 | Webcam 접근 안 됨 | Android 에뮬레이터 | macOS 권한 없음 | ✅ 시스템 설정에서 권한 부여 |
-| 캡처 실패 | 공통 | 권한 없음 | ✅ 카메라 권한 재확인 |
-| 캡처 느림 | Android 에뮬레이터 | 낮은 RAM | ✅ AVD RAM 4GB로 증가 |
-| 이미지 품질 낮음 | Android 에뮬레이터 | Emulated 모드 | ✅ Webcam 모드 사용 |
-| VirtualScene 없음 | Apple Silicon | arm64 미지원 | ℹ️ x86_64 이미지 사용 (느림) |
+| 캡처 실패         | 공통               | 권한 없음       | ✅ 카메라 권한 재확인        |
+| 캡처 느림         | Android 에뮬레이터 | 낮은 RAM        | ✅ AVD RAM 4GB로 증가        |
+| 이미지 품질 낮음  | Android 에뮬레이터 | Emulated 모드   | ✅ Webcam 모드 사용          |
+| VirtualScene 없음 | Apple Silicon      | arm64 미지원    | ℹ️ x86_64 이미지 사용 (느림) |
 
 ---
 
@@ -1287,6 +1331,7 @@ xcrun simctl privacy booted grant all com.example.frontend
 ```
 
 **권한 초기화 (재테스트):**
+
 ```bash
 # 특정 권한 취소
 xcrun simctl privacy booted revoke camera com.example.frontend
@@ -1323,6 +1368,7 @@ adb shell pm grant com.example.frontend android.permission.ACCESS_FINE_LOCATION
 ```
 
 **권한 취소 (재테스트):**
+
 ```bash
 # 특정 권한 취소
 adb shell pm revoke com.example.frontend android.permission.CAMERA
@@ -1332,6 +1378,7 @@ adb shell pm clear com.example.frontend
 ```
 
 **권한 상태 확인:**
+
 ```bash
 # 모든 권한 목록
 adb shell dumpsys package com.example.frontend | grep permission
@@ -1550,14 +1597,15 @@ Logger: "API call: POST /api/v2/chat"
 
 ### 6.4 멀티모달 테스트 디바이스 매트릭스
 
-| 기기 | 음성 녹음 | 카메라 캡처 | 동시 처리 | 백엔드 전송 | TTS 재생 | 전체 플로우 |
-|------|----------|-----------|----------|------------|---------|-----------|
-| **iOS Simulator** | ❌ | ❌ | ❌ | ⚠️ | ✅ | ❌ |
-| **iOS Device** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Android Emulator** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Android Device** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 기기                 | 음성 녹음 | 카메라 캡처 | 동시 처리 | 백엔드 전송 | TTS 재생 | 전체 플로우 |
+| -------------------- | --------- | ----------- | --------- | ----------- | -------- | ----------- |
+| **iOS Simulator**    | ❌        | ❌          | ❌        | ⚠️          | ✅       | ❌          |
+| **iOS Device**       | ✅        | ✅          | ✅        | ✅          | ✅       | ✅          |
+| **Android Emulator** | ✅        | ✅          | ✅        | ✅          | ✅       | ✅          |
+| **Android Device**   | ✅        | ✅          | ✅        | ✅          | ✅       | ✅          |
 
 **결론:**
+
 - iOS는 실기기 필수
 - Android는 에뮬레이터로 전체 플로우 테스트 가능
 - 성능 테스트는 실기기 권장
@@ -1571,15 +1619,18 @@ Logger: "API call: POST /api/v2/chat"
 #### 문제 1: "No cameras available"
 
 **증상:**
+
 ```dart
 Logger: Available cameras: 0
 Error: No cameras available on this device
 ```
 
 **원인:**
+
 - iOS 시뮬레이터 사용 중
 
 **해결책:**
+
 ```bash
 # ✅ 실물 iPhone/iPad 사용
 flutter devices
@@ -1592,15 +1643,18 @@ flutter run -d <iphone-device-id>
 #### 문제 2: "Audio recording failed"
 
 **증상:**
+
 ```dart
 Logger: Recording started
 Error: Recording failed: PlatformException
 ```
 
 **원인:**
+
 - iOS 시뮬레이터 사용 (iOS 15+ 알려진 버그)
 
 **해결책:**
+
 ```bash
 # ✅ 실물 iPhone 사용 필수
 # 또는 Mock 서비스 구현 (테스트용)
@@ -1618,16 +1672,19 @@ if (Platform.isIOS && _isSimulator()) {
 #### 문제 3: "Permission denied"
 
 **증상:**
+
 ```
 User denied camera permission
 User denied microphone permission
 ```
 
 **원인:**
+
 - Info.plist에 usage description 누락
 - 사용자가 권한 거부
 
 **해결책:**
+
 ```bash
 # 1. Info.plist 확인
 cat ios/Runner/Info.plist | grep Usage
@@ -1654,14 +1711,17 @@ xcrun simctl privacy booted grant microphone com.example.frontend
 #### 문제 4: "Device not trusted"
 
 **증상:**
+
 ```
 Could not find any available devices
 ```
 
 **원인:**
+
 - iPhone이 Mac을 신뢰하지 않음
 
 **해결책:**
+
 ```
 1. iPhone에서:
    - USB 연결 시 "이 컴퓨터를 신뢰하시겠습니까?" → [신뢰]
@@ -1681,14 +1741,17 @@ Could not find any available devices
 #### 문제 5: "Code signing error"
 
 **증상:**
+
 ```
 error: Signing for "Runner" requires a development team.
 ```
 
 **원인:**
+
 - Xcode에서 개발 팀 미설정
 
 **해결책:**
+
 ```bash
 # 1. Xcode에서 자동 서명 설정
 open ios/Runner.xcworkspace
@@ -1714,16 +1777,19 @@ flutter run
 #### 문제 1: "Audio recording fails" (에뮬레이터)
 
 **증상:**
+
 ```dart
 Logger: Recording started
 Error: Failed to start recording
 ```
 
 **원인:**
+
 - Virtual microphone 비활성화
 - macOS 마이크 권한 없음
 
 **해결책:**
+
 ```bash
 # 1. AVD 설정 확인
 # Device Manager → Edit AVD → Advanced Settings
@@ -1746,14 +1812,17 @@ sampleRate: 16000 // 44100 대신 16kHz 사용
 #### 문제 2: "Audio has static/noise"
 
 **증상:**
+
 - 녹음 파일에 잡음 심함
 - 재생 시 끊김 또는 디스토션
 
 **원인:**
+
 - 높은 샘플레이트 (44100Hz)
 - 에뮬레이터 리소스 부족
 
 **해결책:**
+
 ```dart
 // frontend/lib/services/audio_service.dart
 final config = RecordConfig(
@@ -1771,14 +1840,17 @@ final config = RecordConfig(
 #### 문제 3: "Camera not available"
 
 **증상:**
+
 ```dart
 Logger: Available cameras: 0
 ```
 
 **원인:**
+
 - AVD 카메라 설정 안 됨
 
 **해결책:**
+
 ```bash
 # 1. AVD 설정 확인
 # Device Manager → Edit AVD → Advanced Settings
@@ -1797,15 +1869,18 @@ Logger: Available cameras: 0
 #### 문제 4: "Emulator is slow"
 
 **증상:**
+
 - 에뮬레이터 부팅 느림 (5분+)
 - 앱 실행 느림
 - UI 버벅임
 
 **원인:**
+
 - x86_64 이미지 사용 (Apple Silicon에서 비효율적)
 - 낮은 RAM/CPU 할당
 
 **해결책:**
+
 ```bash
 # 1. ARM64 이미지 사용 (필수!)
 # Device Manager → Create Device
@@ -1832,14 +1907,17 @@ Logger: Available cameras: 0
 #### 문제 5: "Build fails: SDK not found"
 
 **증상:**
+
 ```
 Android SDK not found. Define location with sdk.dir...
 ```
 
 **원인:**
+
 - Android SDK 경로 설정 안 됨
 
 **해결책:**
+
 ```bash
 # 1. Android SDK 경로 확인
 ~/Library/Android/sdk
@@ -1863,12 +1941,14 @@ flutter run
 #### 문제 1: "flutter run fails"
 
 **증상:**
+
 ```bash
 $ flutter run
 No devices found
 ```
 
 **해결책:**
+
 ```bash
 # 1. 기기 연결 확인
 flutter devices
@@ -1894,9 +1974,11 @@ flutter run
 #### 문제 2: "Hot reload not working"
 
 **증상:**
+
 - 코드 수정 후 `r` 눌러도 변경사항 반영 안 됨
 
 **해결책:**
+
 ```bash
 # 1. Hot restart 시도
 # 터미널에서: R (대문자)
@@ -1921,11 +2003,13 @@ flutter run
 #### 문제 3: "Build fails after pub get"
 
 **증상:**
+
 ```
 Error: Could not resolve package dependencies
 ```
 
 **해결책:**
+
 ```bash
 # 1. 캐시 정리
 flutter clean
@@ -1948,11 +2032,13 @@ flutter pub outdated
 #### 문제 4: "Permission denied errors"
 
 **증상:**
+
 ```dart
 PlatformException(PermissionHandler.PermissionRequestDenied)
 ```
 
 **해결책:**
+
 ```bash
 # 1. 권한 상태 확인
 # iOS:
@@ -1977,14 +2063,17 @@ flutter run
 #### 문제 5: "Camera/Audio packages not working"
 
 **증상:**
+
 ```dart
 MissingPluginException(No implementation found for method...)
 ```
 
 **원인:**
+
 - Native plugin 빌드 안 됨
 
 **해결책:**
+
 ```bash
 # 1. Pod 재설치 (iOS)
 cd ios
@@ -2045,6 +2134,7 @@ flutter pub outdated
 ```
 
 **권장 사항:**
+
 - **주요 개발**: Android 에뮬레이터 (음성+카메라 가능)
 - **UI 확인**: iOS 시뮬레이터 (빠름)
 - **실기기 테스트**: 주 1-2회
@@ -2131,6 +2221,7 @@ Day 6-7: 사용자 시나리오 테스트
 ```
 
 **릴리스 체크리스트:**
+
 ```
 ✅ flutter analyze: 0 errors, 0 warnings
 ✅ flutter test: All tests pass
@@ -2153,6 +2244,7 @@ Day 6-7: 사용자 시나리오 테스트
 #### 높은 우선순위 (매일)
 
 1. **Android 에뮬레이터** (Pixel 7, arm64-v8a, API 33)
+
    - 이유: 전체 기능 테스트 가능
    - 용도: 일일 개발 및 빠른 검증
 
@@ -2169,10 +2261,12 @@ Day 6-7: 사용자 시나리오 테스트
 #### 낮은 우선순위 (월 1-2회 또는 릴리스 전)
 
 4. **Android (실기기)** (Pixel 6+)
+
    - 이유: Android 에뮬레이터가 대부분 커버
    - 용도: 최종 성능 및 하드웨어 호환성
 
 5. **다양한 iOS 기기** (iPad, iPhone SE, 구형 모델)
+
    - 이유: 호환성 확인
    - 용도: 릴리스 전 QA
 
@@ -2193,13 +2287,13 @@ on: [push, pull_request]
 
 jobs:
   test:
-    runs-on: macos-latest  # Apple Silicon 또는 Intel
+    runs-on: macos-latest # Apple Silicon 또는 Intel
     steps:
       - uses: actions/checkout@v3
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.35.7'
+          flutter-version: "3.35.7"
 
       - name: Install dependencies
         run: |
@@ -2241,6 +2335,7 @@ jobs:
 ```
 
 **CI/CD 전략:**
+
 - **자동 테스트**: 시뮬레이터/에뮬레이터 (UI, 로직, mock 서비스)
 - **수동 테스트**: 실기기 (음성, 카메라, 성능)
 - **릴리스 게이트**: 수동 실기기 테스트 통과 필수
@@ -2254,16 +2349,19 @@ jobs:
 #### ✅ DO (해야 할 것)
 
 1. **Android 에뮬레이터를 주요 개발 환경으로 사용**
+
    - ARM64 이미지 (Apple Silicon 최적화)
    - Webcam + Virtual microphone 설정
    - 매일 사용하여 빠른 반복 개발
 
 2. **iOS 실물 기기 반드시 준비**
+
    - iPhone 13 이상 또는 iPhone SE 3세대
    - 주 1-2회 전체 기능 테스트
    - 릴리스 전 필수 검증
 
 3. **iOS 시뮬레이터는 UI 확인용으로만 사용**
+
    - 레이아웃, 네비게이션, 색상 등
    - 음성/카메라 기능은 테스트 불가
 
@@ -2277,14 +2375,17 @@ jobs:
 #### ❌ DON'T (하지 말아야 할 것)
 
 1. **iOS 시뮬레이터에서 음성/카메라 테스트 시도**
+
    - 시간 낭비 (작동 안 함)
    - 실기기 사용 필수
 
 2. **Android x86_64 이미지 사용 (Apple Silicon에서)**
+
    - 느리고 비효율적
    - ARM64 이미지 사용
 
 3. **에뮬레이터 성능을 실기기 성능으로 착각**
+
    - 에뮬레이터는 느림
    - 성능 측정은 실기기에서
 
@@ -2447,12 +2548,15 @@ pandoc SIMULATOR_TESTING.md -o SIMULATOR_TESTING.pdf
 이 가이드를 따라 문제가 해결되지 않으면:
 
 1. **Flutter Doctor 실행**:
+
    ```bash
    flutter doctor -v
    ```
+
    모든 항목이 ✅ 인지 확인
 
 2. **로그 확인**:
+
    ```bash
    flutter logs > flutter_log.txt
    adb logcat > android_log.txt
@@ -2474,11 +2578,13 @@ pandoc SIMULATOR_TESTING.md -o SIMULATOR_TESTING.pdf
 ### 왜 실제 기기 테스트가 필요한가?
 
 **시뮬레이터/에뮬레이터의 한계:**
+
 - iOS 시뮬레이터: 음성 녹음/카메라 작동 안 함
 - Android 에뮬레이터: 성능/하드웨어 정확도 낮음
 - 실제 사용자 경험과 차이 있음
 
 **실제 기기에서만 테스트 가능:**
+
 - ✅ 실제 마이크 녹음 품질
 - ✅ 실제 카메라 화질 및 성능
 - ✅ 배터리 소모
@@ -2521,6 +2627,7 @@ iPhone에서:
 ```
 
 **iOS 15 이하:**
+
 - 개발자 모드 설정 불필요
 - USB 연결 후 바로 신뢰 가능
 
@@ -2562,6 +2669,7 @@ open -a Xcode
 ```
 
 **Devices 탭에서 확인:**
+
 ```
 왼쪽 사이드바:
 ✅ iPhone 15 Pro
@@ -2583,7 +2691,7 @@ open -a Xcode
 **2.1 기기 ID 확인**
 
 ```bash
-cd /Users/kyungsbook/Desktop/myai/frontend
+cd /Users/kyungsbook/Desktop/Garden_of_Eden/frontend
 
 # 연결된 기기 목록
 flutter devices
@@ -2597,6 +2705,7 @@ flutter devices
 ```
 
 **실제 iPhone 구분:**
+
 - `(mobile)` + `ios` + `iOS 17.0.1` (시뮬레이터 아님)
 - Device ID: 실제 하드웨어 UUID (00008030-...)
 
@@ -2622,6 +2731,7 @@ flutter run
 ```
 
 **빌드 과정:**
+
 ```
 Launching lib/main.dart on iPhone 15 Pro in debug mode...
 Running pod install...                                      2,341ms
@@ -2647,6 +2757,7 @@ http://127.0.0.1:50123/abc123def456/
 **2.3 앱 설치 확인**
 
 **iPhone 홈 화면에서:**
+
 ```
 1. 앱 아이콘 확인:
    - 이름: "Eden" (또는 "frontend")
@@ -2658,6 +2769,7 @@ http://127.0.0.1:50123/abc123def456/
 ```
 
 **설정에서 확인:**
+
 ```
 iPhone 설정 → 일반 → VPN 및 기기 관리 (또는 프로파일 및 기기 관리)
 → 개발자 앱 섹션
@@ -2709,7 +2821,7 @@ iPhone 설정 → 일반 → VPN 및 기기 관리 (또는 프로파일 및 기�
 
 2. 백엔드 서버 실행 확인:
    터미널 새 탭:
-   cd /Users/kyungsbook/Desktop/myai/backend
+   cd /Users/kyungsbook/Desktop/Garden_of_Eden/backend
    ./start_local.sh
 
    확인:
@@ -2765,6 +2877,7 @@ iPhone 설정 → 일반 → VPN 및 기기 관리 (또는 프로파일 및 기�
 **3.3 세부 기능 테스트**
 
 **카메라 테���트:**
+
 ```
 1. 후면 카메라 프리뷰:
    ✅ 실시간 영상 표시
@@ -2781,6 +2894,7 @@ iPhone 설정 → 일반 → VPN 및 기기 관리 (또는 프로파일 및 기�
 ```
 
 **오디오 테스트:**
+
 ```
 1. 녹음 품질:
    ✅ iPhone 마이크 (하단 또는 상단)
@@ -2796,6 +2910,7 @@ iPhone 설정 → 일반 → VPN 및 기기 관리 (또는 프로파일 및 기�
 ```
 
 **권한 테스트:**
+
 ```
 1. 권한 거부 후 재요청:
    설정 → Eden → 권한 → 카메라/마이크 끄기
@@ -2831,6 +2946,7 @@ flutter logs > iphone_test.log
 ```
 
 **로그 예시:**
+
 ```
 🔍 DEBUG: Camera initialized: back camera
 📷 Capturing keyframe 1/8
@@ -2893,6 +3009,7 @@ open http://127.0.0.1:9100?uri=http://127.0.0.1:50123/abc123def456/
 ```
 
 **DevTools 기능:**
+
 ```
 1. Performance 탭:
    ✅ FPS 측정 (목표: 60 FPS)
@@ -3124,7 +3241,7 @@ adb devices
 **1.4 Flutter에서 기기 확인**
 
 ```bash
-cd /Users/kyungsbook/Desktop/myai/frontend
+cd /Users/kyungsbook/Desktop/Garden_of_Eden/frontend
 
 flutter devices
 
@@ -3137,6 +3254,7 @@ flutter devices
 ```
 
 **실제 Galaxy 구분:**
+
 - `(mobile)` + `android-arm64` + `Android 13 (API 33)` (에뮬레이터 아님)
 - Device ID: 실제 하드웨어 시리얼 (RF8R...)
 - 모델명: SM G991N (Galaxy S21) 등
@@ -3165,6 +3283,7 @@ flutter run
 ```
 
 **빌드 과정:**
+
 ```
 Launching lib/main.dart on SM G991N in debug mode...
 Running Gradle task 'assembleDebug'...
@@ -3188,6 +3307,7 @@ http://127.0.0.1:40123/xyz789uvw012/
 **2.2 앱 설치 확인**
 
 **Galaxy 홈 화면/앱 드로어에서:**
+
 ```
 1. 앱 아이콘 확인:
    - 이름: "Eden" (또는 "frontend")
@@ -3199,6 +3319,7 @@ http://127.0.0.1:40123/xyz789uvw012/
 ```
 
 **ADB로 확인:**
+
 ```bash
 # 설치된 앱 확인
 adb shell pm list packages | grep frontend
@@ -3290,6 +3411,7 @@ adb shell dumpsys package com.example.frontend | head -20
 **3.3 Galaxy 특화 기능 테스트**
 
 **카메라 품질 (삼성 고해상도):**
+
 ```
 Galaxy S21/S22/S23:
 ✅ 후면 카메라: 64MP (또는 108MP)
@@ -3299,6 +3421,7 @@ Galaxy S21/S22/S23:
 ```
 
 **오디오 품질:**
+
 ```
 Galaxy 마이크:
 ✅ 다중 마이크 (노이즈 캔슬링)
@@ -3307,6 +3430,7 @@ Galaxy 마이크:
 ```
 
 **Samsung One UI 특성:**
+
 ```
 알림:
 - 권한 요청 시 One UI 스타일 다이얼로그
@@ -3340,6 +3464,7 @@ adb logcat > galaxy_test.log
 ```
 
 **로그 예시:**
+
 ```
 11-04 05:30:12.345 12345 12346 I flutter : 🔍 DEBUG: Camera initialized
 11-04 05:30:13.456 12345 12346 I flutter : 📷 Capturing keyframe 1/8
@@ -3497,16 +3622,16 @@ adb shell pm grant com.example.frontend android.permission.RECORD_AUDIO
 
 #### iPhone vs Galaxy 기능 비교
 
-| 기능 | iPhone 15 Pro | Galaxy S23 | 비고 |
-|------|--------------|-----------|------|
-| **카메라 화질** | ⭐⭐⭐⭐⭐ (48MP) | ⭐⭐⭐⭐⭐ (200MP) | 둘 다 우수 |
-| **오디오 녹음** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | iPhone 약간 우수 |
-| **TTS 재생** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | 스피커 품질 차이 |
-| **빌드 속도** | ⭐⭐⭐⭐ (45초) | ⭐⭐⭐ (2-3분) | Gradle 느림 |
-| **Hot Reload** | ⭐⭐⭐⭐⭐ (즉시) | ⭐⭐⭐⭐⭐ (즉시) | 동일 |
-| **성능** | ⭐⭐⭐⭐⭐ (A17 Pro) | ⭐⭐⭐⭐⭐ (Snapdragon 8 Gen 2) | 거의 동일 |
-| **배터리 효율** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Galaxy 약간 우수 |
-| **UI 일관성** | ⭐⭐⭐⭐⭐ (iOS 통일) | ⭐⭐⭐⭐ (One UI 변형) | iOS 더 일관적 |
+| 기능            | iPhone 15 Pro         | Galaxy S23                      | 비고             |
+| --------------- | --------------------- | ------------------------------- | ---------------- |
+| **카메라 화질** | ⭐⭐⭐⭐⭐ (48MP)     | ⭐⭐⭐⭐⭐ (200MP)              | 둘 다 우수       |
+| **오디오 녹음** | ⭐⭐⭐⭐⭐            | ⭐⭐⭐⭐                        | iPhone 약간 우수 |
+| **TTS 재생**    | ⭐⭐⭐⭐⭐            | ⭐⭐⭐⭐                        | 스피커 품질 차이 |
+| **빌드 속도**   | ⭐⭐⭐⭐ (45초)       | ⭐⭐⭐ (2-3분)                  | Gradle 느림      |
+| **Hot Reload**  | ⭐⭐⭐⭐⭐ (즉시)     | ⭐⭐⭐⭐⭐ (즉시)               | 동일             |
+| **성능**        | ⭐⭐⭐⭐⭐ (A17 Pro)  | ⭐⭐⭐⭐⭐ (Snapdragon 8 Gen 2) | 거의 동일        |
+| **배터리 효율** | ⭐⭐⭐⭐              | ⭐⭐⭐⭐⭐                      | Galaxy 약간 우수 |
+| **UI 일관성**   | ⭐⭐⭐⭐⭐ (iOS 통일) | ⭐⭐⭐⭐ (One UI 변형)          | iOS 더 일관적    |
 
 ---
 
