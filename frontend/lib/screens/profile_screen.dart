@@ -58,12 +58,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       body: profileState.when(
         data: (profile) {
           if (profile == null) {
-            return const Center(
-              child: Text(
-                '프로필을 불러올 수 없습니다',
-                style: TextStyle(color: Colors.white70),
-              ),
-            );
+            return _buildNewUserMessage();
           }
           return _buildProfile(profile);
         },
@@ -120,6 +115,66 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNewUserMessage() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(UIConstants.spacingXXL),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: const Color(UIConstants.darkGrey),
+                borderRadius: BorderRadius.circular(60),
+              ),
+              child: const Icon(
+                Icons.person_outline,
+                size: 60,
+                color: Color(UIConstants.electricCyan),
+              ),
+            ),
+            const SizedBox(height: UIConstants.spacingXXL),
+            const Text(
+              '아직 프로필이 생성되지 않았습니다',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: UIConstants.fontHeadline,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: UIConstants.spacingMD),
+            Text(
+              'AI와 대화를 시작하면\n자동으로 프로필이 학습됩니다',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: UIConstants.fontBody,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: UIConstants.spacingXXL),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.arrow_back),
+              label: const Text('대화 화면으로 돌아가기'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(UIConstants.electricCyan),
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: UIConstants.spacingXL,
+                  vertical: UIConstants.spacingMD,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

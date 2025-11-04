@@ -7,34 +7,46 @@ import 'dart:typed_data';
 class ChatResponse {
   final String conversationId;
   final String responseText;
+  final String? responseAudioUrl;
   final String? responseAudioBase64;
   final bool pitfallWarningTriggered;
   final bool emotionalSupportMode;
   final bool profileUpdated;
   final int profileVersion;
   final int processingTimeMs;
+  final Map<String, int>? tokensUsed;
 
   ChatResponse({
     required this.conversationId,
     required this.responseText,
+    this.responseAudioUrl,
     this.responseAudioBase64,
     required this.pitfallWarningTriggered,
     required this.emotionalSupportMode,
     required this.profileUpdated,
     required this.profileVersion,
     required this.processingTimeMs,
+    this.tokensUsed,
   });
 
   factory ChatResponse.fromJson(Map<String, dynamic> json) {
+    // Parse tokens_used if present
+    Map<String, int>? tokensUsed;
+    if (json['tokens_used'] != null) {
+      tokensUsed = Map<String, int>.from(json['tokens_used'] as Map);
+    }
+
     return ChatResponse(
       conversationId: json['conversation_id'] as String,
       responseText: json['response_text'] as String,
+      responseAudioUrl: json['response_audio_url'] as String?,
       responseAudioBase64: json['response_audio_base64'] as String?,
-      pitfallWarningTriggered: json['pitfall_warning_triggered'] as bool,
-      emotionalSupportMode: json['emotional_support_mode'] as bool,
-      profileUpdated: json['profile_updated'] as bool,
-      profileVersion: json['profile_version'] as int,
-      processingTimeMs: json['processing_time_ms'] as int,
+      pitfallWarningTriggered: json['pitfall_warning_triggered'] as bool? ?? false,
+      emotionalSupportMode: json['emotional_support_mode'] as bool? ?? false,
+      profileUpdated: json['profile_updated'] as bool? ?? false,
+      profileVersion: json['profile_version'] as int? ?? 0,
+      processingTimeMs: json['processing_time_ms'] as int? ?? 0,
+      tokensUsed: tokensUsed,
     );
   }
 }

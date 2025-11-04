@@ -22,7 +22,12 @@ class ProfileNotifier extends StateNotifier<AsyncValue<UserProfile?>> {
       final profile = await _apiService.getProfile(userId);
       state = AsyncValue.data(profile);
     } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
+      // For new users, 404 is expected - return null profile instead of error
+      if (e is ApiException && e.message.contains('리소스를 찾을 수 없습니다')) {
+        state = const AsyncValue.data(null);
+      } else {
+        state = AsyncValue.error(e, stack);
+      }
     }
   }
 

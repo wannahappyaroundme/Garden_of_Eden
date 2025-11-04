@@ -24,6 +24,10 @@ class STTService:
 
         self.client = Groq(api_key=self.api_key)
 
+        # Test if audio attribute exists
+        if not hasattr(self.client, 'audio'):
+            logger.warning("Groq client missing 'audio' attribute - using direct API")
+
         logger.info("Groq Whisper STT service initialized")
 
     async def transcribe_audio(
@@ -52,8 +56,8 @@ class STTService:
                 logger.info(f"Transcribing audio file: {audio_file_path}")
 
                 transcription = self.client.audio.transcriptions.create(
-                    file=audio_file,
-                    model="whisper-large-v3",
+                    file=(audio_file_path, audio_file),
+                    model="whisper-large-v3-turbo",
                     language=language,
                     response_format="text",
                     temperature=0.0  # More deterministic
