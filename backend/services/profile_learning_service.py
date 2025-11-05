@@ -135,6 +135,15 @@ class ProfileLearningService:
             # 9. Apply time decay to all traits
             self._apply_time_decay(profile)
 
+            # 9.5. NEW: Adjust learning preferences based on conversation effectiveness
+            # This is backpropagation-style learning: input (user Q) → output (AI A) → feedback signal
+            self._adjust_learning_preferences(
+                profile=profile,
+                user_message=user_message,
+                ai_response=ai_response,
+                analysis=analysis
+            )
+
             # 10. Update metadata
             profile.profile_version += 1
             profile.last_updated = datetime.now()
@@ -268,3 +277,173 @@ class ProfileLearningService:
 
                 if abs(old_weight - trait.weight) > 0.01:
                     logger.debug(f"Applied decay to {trait_name}: {old_weight:.2f} → {trait.weight:.2f} ({days_since} days)")
+
+    def _adjust_learning_preferences(
+        self,
+        profile: UserProfile,
+        user_message: str,
+        ai_response: str,
+        analysis: ConversationAnalysis
+    ):
+        """
+        Adjust learning preferences based on conversation effectiveness (backpropagation-style)
+
+        This analyzes the input→output interaction to determine if the mentor's approach
+        is working well for this user. Adjusts weights accordingly.
+
+        Signals of POSITIVE mentor effectiveness:
+        - User asks deeper follow-up questions (shows engagement)
+        - User shows self-reflection in responses
+        - User proposes own solutions
+        - User demonstrates growth mindset language
+
+        Signals of NEGATIVE mentor effectiveness:
+        - User asks same question again (didn't understand)
+        - User shows frustration or disengagement
+        - User changes topic abruptly (wasn't helpful)
+        - User gives very short responses (not engaged)
+
+        Args:
+            profile: User profile to update
+            user_message: User's input
+            ai_response: AI's response
+            analysis: Conversation analysis results
+        """
+        # Learning rate for preference adjustments (smaller than trait learning rate)
+        PREF_LEARNING_RATE = 0.05
+
+        # Calculate feedback signals based on conversation analysis
+        feedback_signals = self._calculate_feedback_signals(
+            user_message=user_message,
+            analysis=analysis
+        )
+
+        prefs = profile.learning_preferences
+
+        # Adjust: prefers_questions_over_answers
+        # Positive signal: User asks deeper questions, shows reflection
+        # Negative signal: User seems confused, asks for direct answers
+        if feedback_signals.get("shows_deep_thinking", False):
+            prefs.prefers_questions_over_answers = min(1.0, prefs.prefers_questions_over_answers + PREF_LEARNING_RATE)
+            logger.debug(f"Increased question preference: {prefs.prefers_questions_over_answers:.2f}")
+        elif feedback_signals.get("seems_confused", False):
+            prefs.prefers_questions_over_answers = max(0.0, prefs.prefers_questions_over_answers - PREF_LEARNING_RATE)
+            logger.debug(f"Decreased question preference: {prefs.prefers_questions_over_answers:.2f}")
+
+        # Adjust: responds_to_encouragement
+        # Positive signal: User shows increased motivation after encouragement
+        # Negative signal: User ignores encouragement, stays focused on logic
+        if feedback_signals.get("motivated_by_encouragement", False):
+            prefs.responds_to_encouragement = min(1.0, prefs.responds_to_encouragement + PREF_LEARNING_RATE)
+            logger.debug(f"Increased encouragement response: {prefs.responds_to_encouragement:.2f}")
+        elif feedback_signals.get("ignores_encouragement", False):
+            prefs.responds_to_encouragement = max(0.0, prefs.responds_to_encouragement - PREF_LEARNING_RATE)
+
+        # Adjust: needs_logical_structure
+        # Positive signal: User follows structured approaches well
+        # Negative signal: User prefers intuitive, flexible thinking
+        if feedback_signals.get("follows_structure_well", False):
+            prefs.needs_logical_structure = min(1.0, prefs.needs_logical_structure + PREF_LEARNING_RATE)
+        elif feedback_signals.get("prefers_intuitive_flow", False):
+            prefs.needs_logical_structure = max(0.0, prefs.needs_logical_structure - PREF_LEARNING_RATE)
+
+        # Adjust: values_autonomy
+        # Positive signal: User proposes own solutions, takes initiative
+        # Negative signal: User asks for more guidance, wants direction
+        if feedback_signals.get("proposes_own_solutions", False):
+            prefs.values_autonomy = min(1.0, prefs.values_autonomy + PREF_LEARNING_RATE)
+            logger.debug(f"Increased autonomy value: {prefs.values_autonomy:.2f}")
+        elif feedback_signals.get("asks_for_direction", False):
+            prefs.values_autonomy = max(0.0, prefs.values_autonomy - PREF_LEARNING_RATE)
+
+        # Adjust: growth_mindset_strength
+        # Positive signal: User frames challenges as learning opportunities
+        # Negative signal: User shows fixed mindset language ("I can't", "I'm not good at")
+        if feedback_signals.get("growth_mindset_language", False):
+            prefs.growth_mindset_strength = min(1.0, prefs.growth_mindset_strength + PREF_LEARNING_RATE)
+        elif feedback_signals.get("fixed_mindset_language", False):
+            prefs.growth_mindset_strength = max(0.0, prefs.growth_mindset_strength - PREF_LEARNING_RATE)
+
+        logger.info(f"Adjusted learning preferences for user (backpropagation-style)")
+
+    def _calculate_feedback_signals(
+        self,
+        user_message: str,
+        analysis: ConversationAnalysis
+    ) -> dict:
+        """
+        Calculate feedback signals from user's message and conversation analysis
+
+        These signals indicate how well the current mentor approach is working
+
+        Returns:
+            Dictionary of boolean signals
+        """
+        signals = {}
+        msg_lower = user_message.lower()
+
+        # Positive signals
+        signals["shows_deep_thinking"] = any([
+            "왜" in msg_lower and len(user_message) > 50,  # Asks "why" with detail
+            "어떻게" in msg_lower and len(user_message) > 50,  # Asks "how" with detail
+            "생각해보니" in msg_lower,  # "Now that I think about it"
+            "깨달았" in msg_lower,  # "I realized"
+            "패턴" in msg_lower,  # "pattern"
+        ])
+
+        signals["proposes_own_solutions"] = any([
+            "시도해볼게요" in msg_lower,  # "I'll try"
+            "해보겠습니다" in msg_lower,  # "I will do it"
+            "이렇게 하면" in msg_lower,  # "If I do this"
+            "방법은" in msg_lower and "?" not in msg_lower,  # States a method without asking
+        ])
+
+        signals["growth_mindset_language"] = any([
+            "배우" in msg_lower,  # "learn"
+            "성장" in msg_lower,  # "growth"
+            "발전" in msg_lower,  # "development"
+            "아직" in msg_lower and "못" in msg_lower,  # "not yet" (growth mindset)
+        ])
+
+        signals["motivated_by_encouragement"] = any([
+            "감사합니다" in msg_lower and len(user_message) > 30,  # Thanks with detail
+            "힘이 됩니다" in msg_lower,  # "That's encouraging"
+            "해볼게요" in msg_lower,  # "I'll try" (after encouragement)
+        ])
+
+        signals["follows_structure_well"] = any([
+            "단계" in msg_lower,  # "step"
+            "순서" in msg_lower,  # "order"
+            "먼저" in msg_lower and "그다음" in msg_lower,  # "first" and "then"
+        ])
+
+        # Negative signals
+        signals["seems_confused"] = any([
+            "무슨 말" in msg_lower,  # "What do you mean"
+            "이해가 안" in msg_lower,  # "Don't understand"
+            "다시 설명" in msg_lower,  # "Explain again"
+            len(user_message) < 10,  # Very short response (disengaged)
+        ])
+
+        signals["asks_for_direction"] = any([
+            "어떻게 해야" in msg_lower,  # "What should I do"
+            "알려주" in msg_lower,  # "Tell me"
+            "방법을 모르" in msg_lower,  # "Don't know how"
+        ])
+
+        signals["fixed_mindset_language"] = any([
+            "못해" in msg_lower and "아직" not in msg_lower,  # "Can't" without "yet"
+            "안 돼" in msg_lower,  # "Won't work"
+            "원래" in msg_lower and ("이래" in msg_lower or "그래" in msg_lower),  # "I'm just like this"
+        ])
+
+        # Default False for signals not triggered
+        for key in [
+            "shows_deep_thinking", "proposes_own_solutions", "growth_mindset_language",
+            "motivated_by_encouragement", "follows_structure_well", "seems_confused",
+            "asks_for_direction", "fixed_mindset_language", "ignores_encouragement",
+            "prefers_intuitive_flow"
+        ]:
+            signals.setdefault(key, False)
+
+        return signals
