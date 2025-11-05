@@ -3,10 +3,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'screens/voice_first_screen.dart';
+import 'screens/persona_selection_screen.dart';
+import 'services/cache_service.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize cache service
+  final cacheService = CacheService();
+  await cacheService.initialize();
 
   // Set system UI overlay style
   SystemChrome.setSystemUIOverlayStyle(
@@ -101,14 +107,30 @@ class _PermissionHandlerState extends State<PermissionHandler> {
     }
   }
 
-  void _navigateToMain() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => const VoiceFirstScreen(
-          userId: 'demo_user', // TODO: Implement proper user ID
+  Future<void> _navigateToMain() async {
+    final cacheService = CacheService();
+
+    // Check if onboarding is completed
+    final isOnboardingCompleted = await cacheService.isOnboardingCompleted();
+    final userId = await cacheService.loadUserId();
+
+    if (!mounted) return;
+
+    if (isOnboardingCompleted && userId != null) {
+      // User has completed onboarding - go to main screen
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => VoiceFirstScreen(userId: userId),
         ),
-      ),
-    );
+      );
+    } else {
+      // User needs to complete onboarding - go to persona selection
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => const PersonaSelectionScreen(),
+        ),
+      );
+    }
   }
 
   @override

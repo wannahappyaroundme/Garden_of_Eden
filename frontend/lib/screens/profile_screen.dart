@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/chat_models.dart';
 import '../providers/profile_provider.dart';
+import '../providers/session_provider.dart';
 import '../utils/constants.dart';
 import '../widgets/trait_card.dart';
 
@@ -247,8 +248,82 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
           const SizedBox(height: UIConstants.spacingXXL),
 
+          // Session Info section
+          _buildSessionSection(),
+
+          const SizedBox(height: UIConstants.spacingXL),
+
           // Stats section
           _buildStatsSection(profile),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSessionSection() {
+    final sessionState = ref.watch(sessionProvider);
+
+    return Container(
+      padding: const EdgeInsets.all(UIConstants.spacingLG),
+      decoration: BoxDecoration(
+        color: const Color(UIConstants.darkGrey),
+        borderRadius: BorderRadius.circular(UIConstants.spacingLG),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.timer,
+                color: Color(UIConstants.electricCyan),
+                size: 24,
+              ),
+              const SizedBox(width: UIConstants.spacingSM),
+              const Text(
+                'Session Status',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: UIConstants.fontTitle,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: UIConstants.spacingMD),
+
+          if (sessionState.currentSession != null) ...[
+            _buildStatRow('Session ID', '${sessionState.currentSession!.sessionId.substring(0, 8)}...'),
+            _buildStatRow('Persona', sessionState.currentSession!.persona),
+            _buildStatRow('Turn Count', '${sessionState.turnCount}'),
+            _buildStatRow('Status', sessionState.currentSession!.isExpired ? 'Expired' : 'Active'),
+            if (sessionState.lastActivity != null)
+              _buildStatRow('Last Activity', _formatDateTime(sessionState.lastActivity!)),
+
+            const SizedBox(height: UIConstants.spacingMD),
+
+            ElevatedButton(
+              onPressed: () {
+                ref.read(sessionProvider.notifier).closeSession(
+                      reason: 'User closed from profile',
+                    );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[700],
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 48),
+              ),
+              child: const Text('End Session'),
+            ),
+          ] else ...[
+            Text(
+              'No active session',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: UIConstants.fontBody,
+              ),
+            ),
+          ],
         ],
       ),
     );

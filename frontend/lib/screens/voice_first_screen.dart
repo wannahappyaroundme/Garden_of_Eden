@@ -12,6 +12,7 @@ import '../widgets/response_overlay.dart';
 import '../widgets/loading_overlay.dart';
 import '../widgets/pitfall_warning_banner.dart';
 import '../providers/app_state_provider.dart';
+import '../providers/session_provider.dart';
 import '../providers/service_providers.dart';
 import '../utils/constants.dart';
 import '../utils/page_transitions.dart';
@@ -35,6 +36,12 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
   void initState() {
     super.initState();
     _initializeCamera();
+    _initializeSession();
+  }
+
+  Future<void> _initializeSession() async {
+    final session = ref.read(sessionProvider.notifier);
+    await session.initialize(widget.userId);
   }
 
   @override
@@ -136,11 +143,19 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
       appState.setLoadingMessage('AI가 생각하는 중...');
       appState.setRetryAttempt(0);
 
+      // Get or create session ID
+      final sessionNotifier = ref.read(sessionProvider.notifier);
+      final sessionId = await sessionNotifier.getOrCreateSessionId(
+        userId: widget.userId,
+        persona: currentState.persona,
+      );
+
       // Send to backend with retry callback
       final response = await apiService.sendChat(
         userId: widget.userId,
         message: message,  // Now contains actual transcription
         voiceType: currentState.persona,
+        sessionId: sessionId,  // Include session ID
         cameraFrames: cameraFrames,
         audioFile: audioFile,
         onRetry: (attempt, error) {
@@ -149,6 +164,9 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
           appState.setLoadingMessage('재시도 중... ($attempt/3)');
         },
       );
+
+      // Increment turn count after successful conversation
+      sessionNotifier.incrementTurnCount();
 
       // Clear loading
       appState.clearLoadingMessage();
