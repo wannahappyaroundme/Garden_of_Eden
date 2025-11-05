@@ -17,6 +17,7 @@
 ### Core Philosophy
 
 The system is built on three principles:
+
 1. **Socratic Method**: Ask questions that make users think, rather than providing direct answers
 2. **Growth Mindset**: Frame challenges as learning opportunities, celebrate progress
 3. **Adaptive Learning**: Continuously adjust mentoring approach based on what works for each individual
@@ -73,12 +74,14 @@ The system is built on three principles:
 ### Component Breakdown
 
 #### Frontend (Flutter)
+
 - **Screens**: Onboarding (6-step Socratic), Persona Selection, Voice-First Chat, Profile
 - **Providers**: State management with Riverpod (onboarding, session, app state, profile)
 - **Services**: Camera, Audio (STT recording), API Client
 - **UI**: Material Design with custom dark theme, voice-first UX
 
 #### Backend (FastAPI)
+
 - **API Layer**: RESTful endpoints for onboarding, sessions, chat, profiles
 - **Services**: Onboarding, Session, Conversation, Profile Learning, LLM (Gemini)
 - **Database**: DynamoDB for profiles, conversations, sessions, learning events
@@ -89,6 +92,7 @@ The system is built on three principles:
 ## 🛠️ Technology Stack
 
 ### Backend
+
 - **Framework**: FastAPI 0.104.1 (Python 3.11)
 - **AI/ML**: Google Gemini 2.0 Flash (`gemini-2.0-flash-exp`)
 - **Database**: AWS DynamoDB (NoSQL)
@@ -104,6 +108,7 @@ The system is built on three principles:
   - `uvicorn` - ASGI server
 
 ### Frontend
+
 - **Framework**: Flutter 3.x (Dart)
 - **State Management**: Riverpod (`flutter_riverpod`)
 - **HTTP Client**: Dio (with retry logic)
@@ -113,6 +118,7 @@ The system is built on three principles:
 - **Storage**: `shared_preferences` (local cache)
 
 ### Infrastructure
+
 - **Deployment**: AWS EC2 t3.medium (Seoul region)
 - **Process Manager**: systemd service (`eden-backend.service`)
 - **Port**: 8000 (HTTP)
@@ -123,6 +129,7 @@ The system is built on three principles:
 ## 🧠 AI/ML Components
 
 ### 1. Gemini 2.0 Flash (LLM)
+
 - **Model**: `gemini-2.0-flash-exp`
 - **Purpose**: Conversation generation, onboarding analysis, learning extraction
 - **Temperature**: 0.7 (balanced creativity/consistency)
@@ -147,11 +154,13 @@ PREF_LEARNING_RATE = 0.05
 **Feedback Signal Detection** (Korean language patterns):
 
 **Positive Signals** → Increase weight (+0.05):
+
 - Deep thinking: "왜" (why), "어떻게" (how), "생각해보니" (now that I think)
 - Proposes solutions: "시도해볼게요" (I'll try), "해보겠습니다" (I will do it)
 - Growth mindset: "배우" (learn), "성장" (growth), "아직 못" (not yet)
 
 **Negative Signals** → Decrease weight (-0.05):
+
 - Confusion: "무슨 말" (what do you mean), "이해가 안" (don't understand)
 - Fixed mindset: "못해" (can't), "안 돼" (won't work)
 - Very short responses: < 10 characters (disengagement)
@@ -187,6 +196,7 @@ Extracts user's "One Thing" and initial personality profile:
 6. **Crystallization**: "Express this goal in one sentence"
 
 **Extraction Output**:
+
 - `one_thing`: Primary goal (user's own words)
 - `core_motivation`: Deeper "why"
 - `core_pitfall`: Main obstacle pattern
@@ -200,12 +210,14 @@ Extracts user's "One Thing" and initial personality profile:
 ### 1. Adaptive Mentor Personas
 
 **Adam (Socratic Questioner)**:
+
 - Asks deep, thought-provoking questions
 - Challenges assumptions gently
 - Guides toward self-discovery
 - Analytical, intellectual approach
 
 **Eve (Encouraging Catalyst)**:
+
 - Nurtures growth with warmth
 - Celebrates progress and potential
 - Provides emotional support
@@ -251,6 +263,7 @@ if topic_alignment < 0.7:
 ### 5. Profile Learning & Evolution
 
 After every conversation:
+
 1. Extract insights (traits, emotional state, thinking patterns)
 2. Calculate feedback signals from user response
 3. Adjust weighted preferences (±0.05)
@@ -259,6 +272,7 @@ After every conversation:
 6. Log learning event to DynamoDB
 
 **Profile Maturity Stages**:
+
 - **Seed** (0-4 conversations): Initial formation
 - **Sprout** (5-9): Early patterns emerging
 - **Sapling** (10-19): Stable patterns
@@ -271,6 +285,7 @@ After every conversation:
 ## 📊 Data Models
 
 ### UserProfile
+
 ```python
 {
     "user_id": str,
@@ -299,6 +314,7 @@ After every conversation:
 ```
 
 ### SessionInfo
+
 ```python
 {
     "session_id": str (UUID),
@@ -313,6 +329,7 @@ After every conversation:
 ```
 
 ### OnboardingResult
+
 ```python
 {
     "one_thing": str,
@@ -329,6 +346,7 @@ After every conversation:
 ```
 
 ### ConversationAnalysis
+
 ```python
 {
     "discovered_traits": [NewTrait, ...],
@@ -349,6 +367,7 @@ After every conversation:
 ## 🔌 API Endpoints
 
 ### Onboarding
+
 ```
 POST /api/v2/onboarding/start
 - Body: { user_id, persona }
@@ -363,6 +382,7 @@ GET /api/v2/onboarding/status/{session_id}
 ```
 
 ### Session Management
+
 ```
 POST /api/v2/session/create
 - Body: { user_id, persona }
@@ -380,6 +400,7 @@ POST /api/v2/session/{session_id}/close
 ```
 
 ### Conversation
+
 ```
 POST /api/v2/chat
 - Form Data:
@@ -398,6 +419,7 @@ POST /api/v2/chat
 ```
 
 ### Profile
+
 ```
 GET /api/v2/profile/{user_id}
 - Returns: UserProfile
@@ -408,6 +430,7 @@ PATCH /api/v2/profile/{user_id}
 ```
 
 ### STT (Speech-to-Text)
+
 ```
 POST /api/v2/stt
 - Form Data:
@@ -445,6 +468,7 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 **Required Environment Variables**:
+
 ```bash
 # Google AI
 GEMINI_API_KEY=<your-gemini-api-key>
@@ -475,6 +499,7 @@ flutter build ios  # iOS
 ```
 
 **Configure API Endpoint** ([frontend/lib/utils/constants.dart](frontend/lib/utils/constants.dart)):
+
 ```dart
 class ApiConfig {
   static const String baseUrl = 'http://3.39.177.218:8000';
@@ -518,6 +543,7 @@ sudo systemctl status eden-backend
 ```
 
 **Systemd Service Configuration**:
+
 ```ini
 [Unit]
 Description=Garden of Eden Backend Service
@@ -537,6 +563,7 @@ WantedBy=multi-user.target
 ```
 
 **Monitoring**:
+
 ```bash
 # View logs
 sudo journalctl -u eden-backend -f
@@ -550,6 +577,7 @@ sudo systemctl restart eden-backend
 ## 📱 User Flow
 
 ### First-Time User
+
 1. **Permissions**: Grant camera & microphone access
 2. **Persona Selection**: Choose Adam (Socratic) or Eve (Encouraging)
 3. **Onboarding**: Complete 6-step Socratic dialogue (voice)
@@ -561,6 +589,7 @@ sudo systemctl restart eden-backend
    - Preferences adapt based on feedback signals
 
 ### Returning User
+
 1. **Permissions**: Auto-approved (cached)
 2. **Direct to Chat**: Skip onboarding (completed flag set)
 3. **Session Resume**: Load existing session or create new
@@ -569,16 +598,19 @@ sudo systemctl restart eden-backend
 ### Example Learning Cycle
 
 **Conversation 1**: User gives short, confused responses
+
 - Feedback signal: `seems_confused = True`
 - Action: `prefers_questions_over_answers -= 0.05`
 - Result: Next response has more direct guidance
 
 **Conversation 5**: User asks deep "why" questions, proposes solutions
+
 - Feedback signals: `shows_deep_thinking = True`, `proposes_own_solutions = True`
 - Action: `prefers_questions_over_answers += 0.05`, `values_autonomy += 0.05`
 - Result: Next response asks 2-3 Socratic questions instead of giving answers
 
 **Conversation 20**: User responds well to encouragement
+
 - Feedback signal: `motivated_by_encouragement = True`
 - Action: `responds_to_encouragement += 0.05`
 - Result: AI celebrates wins more frequently
@@ -625,6 +657,7 @@ Proprietary - All Rights Reserved
 ## 📞 Support
 
 For issues or questions:
+
 - GitHub Issues: https://github.com/wannahappyaroundme/Garden_of_Eden/issues
 - Email: [Your contact email]
 
