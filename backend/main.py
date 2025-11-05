@@ -28,6 +28,7 @@ from services.session_manager import SessionManager
 from services.goal_progress_service import GoalProgressService
 from services.analytics_service import AnalyticsService
 from services.voice_customization_service import VoiceCustomizationService
+from services.notification_service import NotificationService
 from models.api_schemas import (
     ChatResponse,
     ProfileResponse,
@@ -64,6 +65,7 @@ db_service: Optional[DynamoDBService] = None
 llm_service: Optional[GeminiService] = None
 analytics_service: Optional[AnalyticsService] = None
 voice_customization_service: Optional[VoiceCustomizationService] = None
+notification_service: Optional[NotificationService] = None
 stt_service: Optional[STTService] = None
 tts_service: Optional[TTSService] = None
 master_processor: Optional[MasterDirectiveProcessor] = None
@@ -76,7 +78,7 @@ goal_progress_service: Optional[GoalProgressService] = None
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup/shutdown"""
     # Startup
-    global db_service, llm_service, stt_service, tts_service, master_processor, onboarding_service, session_manager, goal_progress_service, analytics_service, voice_customization_service
+    global db_service, llm_service, stt_service, tts_service, master_processor, onboarding_service, session_manager, goal_progress_service, analytics_service, voice_customization_service, notification_service
 
     logger.info("Starting Project Eden V2 Backend...")
 
@@ -115,6 +117,12 @@ async def lifespan(app: FastAPI):
 
         # Initialize voice customization service
         voice_customization_service = VoiceCustomizationService(db_service=db_service)
+
+        # Initialize notification service
+        notification_service = NotificationService(
+            db_service=db_service,
+            goal_progress_service=goal_progress_service
+        )
 
         # Initialize master processor with session manager
         master_processor = MasterDirectiveProcessor(
@@ -356,6 +364,13 @@ def get_voice_customization_service() -> VoiceCustomizationService:
     if voice_customization_service is None:
         raise HTTPException(status_code=500, detail="Voice customization service not initialized")
     return voice_customization_service
+
+
+def get_notification_service() -> NotificationService:
+    """Dependency to get notification service"""
+    if notification_service is None:
+        raise HTTPException(status_code=500, detail="Notification service not initialized")
+    return notification_service
 
 
 # ==================== API Endpoints ====================
@@ -1328,6 +1343,203 @@ async def get_persona_traits(
 ):
     """Get persona trait configuration"""
     return voice_service.get_persona_trait_configs()
+
+
+# ==================== Notification Endpoints ====================
+
+class FCMTokenRequest(BaseModel):
+    """Request model for FCM token registration"""
+    fcm_token: str
+    device_info: Optional[dict] = None
+
+
+class NotificationPreferencesUpdate(BaseModel):
+    """Request model for notification preferences update"""
+    enabled: Optional[bool] = None
+    goal_reminders: Optional[bool] = None
+    stagnation_alerts: Optional[bool] = None
+    milestone_notifications: Optional[bool] = None
+    encouragement_messages: Optional[bool] = None
+    weekly_summaries: Optional[bool] = None
+    reminder_time: Optional[str] = None
+    quiet_hours_start: Optional[str] = None
+    quiet_hours_end: Optional[str] = None
+    timezone: Optional[str] = None
+
+
+@app.post("/api/v2/notifications/{user_id}/subscribe", tags=["Notifications"])
+async def subscribe_to_notifications(
+    user_id: str,
+    request: FCMTokenRequest,
+    notification_service: NotificationService = Depends(get_notification_service)
+):
+    """
+    Register FCM token for push notifications
+
+    Args:
+        user_id: User ID
+        request: FCM token and optional device info
+
+    Returns:
+        Registration status
+    """
+    try:
+        result = await notification_service.register_fcm_token(
+            user_id=user_id,
+            fcm_token=request.fcm_token,
+            device_info=request.device_info
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error subscribing to notifications for {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to register FCM token")
+
+
+@app.delete("/api/v2/notifications/{user_id}/unsubscribe", tags=["Notifications"])
+async def unsubscribe_from_notifications(
+    user_id: str,
+    notification_service: NotificationService = Depends(get_notification_service)
+):
+    """
+    Remove FCM token (e.g., on logout)
+
+    Args:
+        user_id: User ID
+
+    Returns:
+        Unregistration status
+    """
+    try:
+        result = await notification_service.unregister_fcm_token(user_id)
+        return result
+    except Exception as e:
+        logger.error(f"Error unsubscribing from notifications for {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to unregister FCM token")
+
+
+@app.get("/api/v2/notifications/{user_id}/preferences", tags=["Notifications"])
+async def get_notification_preferences(
+    user_id: str,
+    notification_service: NotificationService = Depends(get_notification_service)
+):
+    """
+    Get user's notification preferences
+
+    Args:
+        user_id: User ID
+
+    Returns:
+        Notification preferences including reminder times and quiet hours
+    """
+    try:
+        preferences = await notification_service.get_notification_preferences(user_id)
+        return preferences
+    except Exception as e:
+        logger.error(f"Error getting notification preferences for {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get notification preferences")
+
+
+@app.put("/api/v2/notifications/{user_id}/preferences", tags=["Notifications"])
+async def update_notification_preferences(
+    user_id: str,
+    preferences: NotificationPreferencesUpdate,
+    notification_service: NotificationService = Depends(get_notification_service)
+):
+    """
+    Update user's notification preferences
+
+    Args:
+        user_id: User ID
+        preferences: Preferences to update
+
+    Returns:
+        Updated preferences
+    """
+    try:
+        # Convert to dict, excluding None values
+        prefs_dict = {k: v for k, v in preferences.dict().items() if v is not None}
+
+        updated = await notification_service.update_notification_preferences(
+            user_id=user_id,
+            preferences=prefs_dict
+        )
+        return updated
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error updating notification preferences for {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update preferences")
+
+
+@app.post("/api/v2/notifications/{user_id}/test", tags=["Notifications"])
+async def send_test_notification(
+    user_id: str,
+    notification_service: NotificationService = Depends(get_notification_service)
+):
+    """
+    Send a test notification to verify FCM setup
+
+    Args:
+        user_id: User ID
+
+    Returns:
+        Test notification payload (in production, this would trigger actual push)
+    """
+    try:
+        notification_payload = await notification_service.send_test_notification(user_id)
+        return {
+            "message": "Test notification generated (FCM integration pending)",
+            "payload": notification_payload
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error sending test notification for {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to send test notification")
+
+
+@app.get("/api/v2/notifications/{user_id}/pending", tags=["Notifications"])
+async def get_pending_notifications(
+    user_id: str,
+    notification_service: NotificationService = Depends(get_notification_service)
+):
+    """
+    Get pending notifications for user (reminders, alerts, encouragement)
+
+    Args:
+        user_id: User ID
+
+    Returns:
+        List of pending notifications
+    """
+    try:
+        notifications = []
+
+        # Generate goal reminder if applicable
+        goal_reminder = await notification_service.generate_goal_reminder(user_id)
+        if goal_reminder:
+            notifications.append(goal_reminder)
+
+        # Check for stagnation alert
+        stagnation_alert = await notification_service.generate_stagnation_alert(user_id)
+        if stagnation_alert:
+            notifications.append(stagnation_alert)
+
+        # Generate encouragement message
+        encouragement = await notification_service.generate_encouragement_message(user_id)
+        if encouragement:
+            notifications.append(encouragement)
+
+        return {
+            "user_id": user_id,
+            "count": len(notifications),
+            "notifications": notifications
+        }
+    except Exception as e:
+        logger.error(f"Error getting pending notifications for {user_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get pending notifications")
 
 
 # ==================== Error Handlers ====================
