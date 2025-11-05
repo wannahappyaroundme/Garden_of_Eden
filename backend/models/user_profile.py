@@ -92,11 +92,53 @@ class ChildhoodExperience(BaseModel):
 
 
 class LearningPreferences(BaseModel):
-    """How user prefers to learn"""
+    """How user prefers to learn - with weighted mentor adaptation parameters"""
+    # Legacy fields
     learning_style: str = "unknown"
     preferred_formats: List[str] = Field(default_factory=list)
     energy_peaks: List[str] = Field(default_factory=list)
     stress_response: str = "unknown"
+
+    # NEW: Weighted mentor adaptation preferences (0.0-1.0)
+    # These weights adjust how the mentor interacts with the user
+    prefers_questions_over_answers: float = Field(default=0.5, ge=0.0, le=1.0)
+    responds_to_encouragement: float = Field(default=0.5, ge=0.0, le=1.0)
+    needs_logical_structure: float = Field(default=0.5, ge=0.0, le=1.0)
+    values_autonomy: float = Field(default=0.5, ge=0.0, le=1.0)
+    growth_mindset_strength: float = Field(default=0.5, ge=0.0, le=1.0)
+
+    def to_context_string(self) -> str:
+        """Format learning preferences for prompt injection"""
+        return f"""Learning Preferences (0.0-1.0 scale):
+- Prefers questions over direct answers: {self.prefers_questions_over_answers:.2f}
+- Responds well to encouragement: {self.responds_to_encouragement:.2f}
+- Needs logical structure: {self.needs_logical_structure:.2f}
+- Values autonomy (self-direction): {self.values_autonomy:.2f}
+- Growth mindset strength: {self.growth_mindset_strength:.2f}"""
+
+
+class ThinkingPattern(BaseModel):
+    """Observed thinking pattern with weight"""
+    pattern_name: str
+    description: str
+    weight: float = Field(ge=0.0, le=1.0, default=0.5)
+    evidence_count: int = 0
+    last_observed: datetime = Field(default_factory=datetime.now)
+
+
+class ThinkingPatterns(BaseModel):
+    """Collection of user's thinking patterns"""
+    # How user typically responds to questions
+    default_response_style: Optional[ThinkingPattern] = None  # e.g., "asks_clarifying_questions", "jumps_to_solutions"
+
+    # How user approaches problem-solving
+    problem_solving_approach: Optional[ThinkingPattern] = None  # e.g., "analytical_breakdown", "intuitive_feel"
+
+    # Depth of reflection
+    reflection_depth: Optional[ThinkingPattern] = None  # e.g., "surface_level", "deep_introspection"
+
+    # Patterns dictionary for custom patterns
+    custom_patterns: Dict[str, ThinkingPattern] = Field(default_factory=dict)
 
 
 class MetaLearning(BaseModel):
@@ -133,6 +175,9 @@ class UserProfile(BaseModel):
 
     # Learning Preferences
     learning_preferences: LearningPreferences = Field(default_factory=LearningPreferences)
+
+    # Thinking Patterns (NEW)
+    thinking_patterns: ThinkingPatterns = Field(default_factory=ThinkingPatterns)
 
     # Emotional Patterns
     emotional_patterns: EmotionalPatterns = Field(default_factory=EmotionalPatterns)
@@ -216,6 +261,10 @@ class UserProfile(BaseModel):
                 lines.append(f"  - {trait.name}: {trait.weight:.2f}")
 
         return "\n".join(lines)
+
+    def get_learning_preferences_context(self) -> str:
+        """Get learning preferences formatted for prompt injection"""
+        return self.learning_preferences.to_context_string()
 
     class Config:
         json_encoders = {
