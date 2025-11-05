@@ -27,6 +27,7 @@ from services.onboarding_service import OnboardingService
 from services.session_manager import SessionManager
 from services.goal_progress_service import GoalProgressService
 from services.analytics_service import AnalyticsService
+from services.voice_customization_service import VoiceCustomizationService
 from models.api_schemas import (
     ChatResponse,
     ProfileResponse,
@@ -62,6 +63,7 @@ app_start_time = time.time()
 db_service: Optional[DynamoDBService] = None
 llm_service: Optional[GeminiService] = None
 analytics_service: Optional[AnalyticsService] = None
+voice_customization_service: Optional[VoiceCustomizationService] = None
 stt_service: Optional[STTService] = None
 tts_service: Optional[TTSService] = None
 master_processor: Optional[MasterDirectiveProcessor] = None
@@ -74,7 +76,7 @@ goal_progress_service: Optional[GoalProgressService] = None
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup/shutdown"""
     # Startup
-    global db_service, llm_service, stt_service, tts_service, master_processor, onboarding_service, session_manager, goal_progress_service, analytics_service
+    global db_service, llm_service, stt_service, tts_service, master_processor, onboarding_service, session_manager, goal_progress_service, analytics_service, voice_customization_service
 
     logger.info("Starting Project Eden V2 Backend...")
 
@@ -110,6 +112,9 @@ async def lifespan(app: FastAPI):
 
         # Initialize analytics service
         analytics_service = AnalyticsService(db_service=db_service)
+
+        # Initialize voice customization service
+        voice_customization_service = VoiceCustomizationService(db_service=db_service)
 
         # Initialize master processor with session manager
         master_processor = MasterDirectiveProcessor(
@@ -344,6 +349,13 @@ def get_analytics_service() -> AnalyticsService:
     if analytics_service is None:
         raise HTTPException(status_code=500, detail="Analytics service not initialized")
     return analytics_service
+
+
+def get_voice_customization_service() -> VoiceCustomizationService:
+    """Dependency to get voice customization service"""
+    if voice_customization_service is None:
+        raise HTTPException(status_code=500, detail="Voice customization service not initialized")
+    return voice_customization_service
 
 
 # ==================== API Endpoints ====================
@@ -1236,6 +1248,86 @@ async def get_period_comparison(
         period2_days
     )
     return comparison
+
+
+# ==================== Voice Customization Endpoints ====================
+
+@app.get("/api/v2/voice/{user_id}/settings", tags=["Voice"])
+async def get_voice_settings(
+    user_id: str,
+    voice_service: VoiceCustomizationService = Depends(get_voice_customization_service)
+):
+    """Get user's voice customization settings"""
+    settings = await voice_service.get_voice_settings(user_id)
+    return settings
+
+
+@app.put("/api/v2/voice/{user_id}/settings", tags=["Voice"])
+async def update_voice_settings(
+    user_id: str,
+    voice_id: Optional[str] = Form(None),
+    speed: Optional[float] = Form(None),
+    pitch: Optional[float] = Form(None),
+    volume: Optional[float] = Form(None),
+    persona_empathy: Optional[int] = Form(None),
+    persona_directness: Optional[int] = Form(None),
+    persona_formality: Optional[int] = Form(None),
+    persona_encouragement: Optional[int] = Form(None),
+    voice_service: VoiceCustomizationService = Depends(get_voice_customization_service)
+):
+    """
+    Update user's voice customization settings
+
+    Args:
+        voice_id: Voice identifier (default, female_gentle, male_confident, neutral_calm)
+        speed: Speech speed (0.5 - 2.0)
+        pitch: Voice pitch (0.5 - 2.0)
+        volume: Volume level (0.5 - 2.0)
+        persona_empathy: Empathy level (1-5)
+        persona_directness: Directness level (1-5)
+        persona_formality: Formality level (1-5)
+        persona_encouragement: Encouragement level (1-5)
+    """
+    # Build persona_traits dict
+    persona_traits = {}
+    if persona_empathy is not None:
+        persona_traits["empathy_level"] = persona_empathy
+    if persona_directness is not None:
+        persona_traits["directness"] = persona_directness
+    if persona_formality is not None:
+        persona_traits["formality"] = persona_formality
+    if persona_encouragement is not None:
+        persona_traits["encouragement"] = persona_encouragement
+
+    settings = await voice_service.update_voice_settings(
+        user_id=user_id,
+        voice_id=voice_id,
+        speed=speed,
+        pitch=pitch,
+        volume=volume,
+        persona_traits=persona_traits if persona_traits else None
+    )
+
+    return {
+        "success": True,
+        "settings": settings
+    }
+
+
+@app.get("/api/v2/voice/available-voices", tags=["Voice"])
+async def get_available_voices(
+    voice_service: VoiceCustomizationService = Depends(get_voice_customization_service)
+):
+    """Get list of available voice options"""
+    return voice_service.get_available_voices()
+
+
+@app.get("/api/v2/voice/persona-traits", tags=["Voice"])
+async def get_persona_traits(
+    voice_service: VoiceCustomizationService = Depends(get_voice_customization_service)
+):
+    """Get persona trait configuration"""
+    return voice_service.get_persona_trait_configs()
 
 
 # ==================== Error Handlers ====================
