@@ -6,6 +6,7 @@ import uuid
 from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict, Any
 import json
+import traceback
 
 from models.user_profile import UserProfile
 from models.goal_progress import (
@@ -20,6 +21,13 @@ from models.goal_progress import (
 )
 from services.dynamodb_service_v2 import DynamoDBService
 from services.llm_gemini_v2 import GeminiService
+from exceptions.goal_exceptions import (
+    GoalNotFoundException,
+    OneThingNotSetException,
+    AIServiceException,
+    DatabaseOperationException,
+    InsufficientDataException
+)
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -45,16 +53,30 @@ class GoalProgressService:
         description: Optional[str] = None
     ) -> Optional[GoalProgressTracker]:
         """Initialize goal tracker from user's One Thing"""
+        user_id = user_profile.user_id
+
         try:
+            # Validate One Thing exists
             if not user_profile.one_thing or not user_profile.one_thing.value:
-                logger.warning(f"Cannot create goal - no One Thing set for user {user_profile.user_id}")
-                return None
+                logger.warning(
+                    f"Goal creation failed - One Thing not set",
+                    extra={"user_id": user_id}
+                )
+                raise OneThingNotSetException(user_id)
 
             goal_id = str(uuid.uuid4())
+            logger.info(
+                f"Creating goal tracker",
+                extra={
+                    "user_id": user_id,
+                    "goal_id": goal_id,
+                    "one_thing": user_profile.one_thing.value[:50]
+                }
+            )
 
             # Create tracker
             tracker = GoalProgressTracker(
-                user_id=user_profile.user_id,
+                user_id=user_id,
                 goal_id=goal_id,
                 one_thing=user_profile.one_thing.value,
                 description=description,
@@ -65,27 +87,60 @@ class GoalProgressService:
             # Generate initial milestones using AI
             if target_date:
                 days_until_target = (target_date - date.today()).days
-                milestones = await self.suggest_milestones(
-                    goal=user_profile.one_thing.value,
-                    timeframe_days=days_until_target,
-                    user_context=self._build_user_context(user_profile)
-                )
-                for milestone in milestones:
-                    tracker.add_milestone(milestone)
+                try:
+                    milestones = await self.suggest_milestones(
+                        goal=user_profile.one_thing.value,
+                        timeframe_days=days_until_target,
+                        user_context=self._build_user_context(user_profile)
+                    )
+                    for milestone in milestones:
+                        tracker.add_milestone(milestone)
+                    logger.info(
+                        f"Generated {len(milestones)} milestones",
+                        extra={"user_id": user_id, "goal_id": goal_id}
+                    )
+                except AIServiceException as e:
+                    # Continue without AI-generated milestones - use defaults
+                    logger.warning(
+                        f"Using default milestones due to AI service failure",
+                        extra={"user_id": user_id, "error": str(e)}
+                    )
 
             # Save to database
-            success = await self.db.save_goal_progress(tracker)
+            try:
+                success = await self.db.save_goal_progress(tracker)
+                if not success:
+                    raise DatabaseOperationException(
+                        user_id,
+                        "save_goal_progress",
+                        Exception("Database returned False")
+                    )
 
-            if success:
-                logger.info(f"Created goal tracker for user {user_profile.user_id}")
+                logger.info(
+                    f"Successfully created goal tracker",
+                    extra={"user_id": user_id, "goal_id": goal_id}
+                )
                 return tracker
-            else:
-                logger.error(f"Failed to save goal tracker for {user_profile.user_id}")
-                return None
 
+            except Exception as e:
+                raise DatabaseOperationException(
+                    user_id,
+                    "save_goal_progress",
+                    e
+                )
+
+        except (OneThingNotSetException, DatabaseOperationException):
+            raise
         except Exception as e:
-            logger.error(f"Error creating goal from One Thing: {e}")
-            return None
+            logger.error(
+                f"Unexpected error creating goal",
+                extra={
+                    "user_id": user_id,
+                    "error": str(e),
+                    "traceback": traceback.format_exc()
+                }
+            )
+            raise DatabaseOperationException(user_id, "create_goal_from_one_thing", e)
 
     async def suggest_milestones(
         self,
@@ -94,7 +149,22 @@ class GoalProgressService:
         user_context: Optional[str] = None
     ) -> List[Milestone]:
         """Generate AI-powered milestone suggestions"""
+
+        # Validate inputs
+        if not goal or not goal.strip():
+            logger.warning("Empty goal provided for milestone generation")
+            return []
+
+        if timeframe_days <= 0:
+            logger.warning(f"Invalid timeframe: {timeframe_days} days")
+            return []
+
         try:
+            logger.info(
+                f"Generating milestones via AI",
+                extra={"goal": goal[:50], "timeframe": timeframe_days}
+            )
+
             prompt = f"""You are a goal-setting expert. Create a detailed milestone plan for achieving this goal:
 
 Goal: {goal}
@@ -125,35 +195,76 @@ Requirements:
 - Each milestone should be 1-2 sentences
 - Order starts at 1"""
 
-            response = await self.gemini.generate_content(prompt)
+            try:
+                response = await self.gemini.generate_content(prompt)
+            except Exception as e:
+                logger.error(
+                    f"Gemini API call failed",
+                    extra={"error": str(e), "goal": goal[:50]}
+                )
+                raise AIServiceException(None, "milestone_generation", e)
 
             # Parse response
-            response_text = response.strip()
-            if response_text.startswith("```json"):
-                response_text = response_text[7:-3].strip()
-            elif response_text.startswith("```"):
-                response_text = response_text[3:-3].strip()
+            try:
+                response_text = response.strip()
+                if response_text.startswith("```json"):
+                    response_text = response_text[7:-3].strip()
+                elif response_text.startswith("```"):
+                    response_text = response_text[3:-3].strip()
 
-            milestone_data = json.loads(response_text)
+                milestone_data = json.loads(response_text)
+
+                if not isinstance(milestone_data, list):
+                    raise ValueError("AI response is not a JSON array")
+
+            except (json.JSONDecodeError, ValueError) as e:
+                logger.error(
+                    f"Failed to parse AI milestone response",
+                    extra={
+                        "error": str(e),
+                        "response_preview": response_text[:200] if response_text else "empty"
+                    }
+                )
+                raise AIServiceException(None, "milestone_parsing", e)
 
             # Convert to Milestone objects
             milestones = []
-            for data in milestone_data:
-                milestone = Milestone(
-                    milestone_id=str(uuid.uuid4()),
-                    description=data["description"],
-                    target_date=date.fromisoformat(data["target_date"]) if data.get("target_date") else None,
-                    order=data.get("order", len(milestones) + 1),
-                    is_completed=False
-                )
-                milestones.append(milestone)
+            for i, data in enumerate(milestone_data):
+                try:
+                    milestone = Milestone(
+                        milestone_id=str(uuid.uuid4()),
+                        description=data["description"],
+                        target_date=date.fromisoformat(data["target_date"]) if data.get("target_date") else None,
+                        order=data.get("order", len(milestones) + 1),
+                        is_completed=False
+                    )
+                    milestones.append(milestone)
+                except (KeyError, ValueError) as e:
+                    logger.warning(
+                        f"Skipping invalid milestone {i+1}",
+                        extra={"error": str(e), "data": data}
+                    )
+                    continue
 
-            logger.info(f"Generated {len(milestones)} milestones for goal: {goal[:50]}...")
+            if not milestones:
+                logger.warning("AI generated no valid milestones, using defaults")
+                return self._generate_default_milestones(goal, timeframe_days)
+
+            logger.info(
+                f"Successfully generated {len(milestones)} milestones",
+                extra={"goal": goal[:50]}
+            )
             return milestones
 
+        except AIServiceException:
+            # Return default milestones when AI fails
+            logger.info("Falling back to default milestone generation")
+            return self._generate_default_milestones(goal, timeframe_days)
         except Exception as e:
-            logger.error(f"Error suggesting milestones: {e}")
-            # Return default milestones as fallback
+            logger.error(
+                f"Unexpected error in milestone generation",
+                extra={"error": str(e), "traceback": traceback.format_exc()}
+            )
             return self._generate_default_milestones(goal, timeframe_days)
 
     def _generate_default_milestones(self, goal: str, timeframe_days: int) -> List[Milestone]:
@@ -193,6 +304,25 @@ Requirements:
     ) -> bool:
         """Record a progress snapshot"""
         try:
+            logger.info(
+                f"Recording progress snapshot",
+                extra={
+                    "user_id": user_id,
+                    "has_metrics": bool(metrics),
+                    "has_reflection": bool(reflection),
+                    "mood": mood_rating
+                }
+            )
+
+            # Check if goal exists
+            tracker = await self.db.get_goal_progress(user_id)
+            if not tracker:
+                logger.warning(
+                    f"Cannot record progress - no goal found",
+                    extra={"user_id": user_id}
+                )
+                raise GoalNotFoundException(user_id)
+
             snapshot = ProgressSnapshot(
                 snapshot_id=str(uuid.uuid4()),
                 date=date.today(),
@@ -202,22 +332,58 @@ Requirements:
                 photo_url=photo_url
             )
 
-            success = await self.db.add_progress_snapshot(user_id, snapshot)
+            try:
+                success = await self.db.add_progress_snapshot(user_id, snapshot)
+                if not success:
+                    raise DatabaseOperationException(
+                        user_id,
+                        "add_progress_snapshot",
+                        Exception("Database returned False")
+                    )
+            except Exception as e:
+                raise DatabaseOperationException(
+                    user_id,
+                    "add_progress_snapshot",
+                    e
+                )
 
-            if success:
-                logger.info(f"Recorded progress snapshot for user {user_id}")
+            logger.info(
+                f"Progress snapshot recorded successfully",
+                extra={"user_id": user_id, "snapshot_id": snapshot.snapshot_id}
+            )
 
-                # Analyze trend after recording
+            # Analyze trend after recording (non-blocking)
+            try:
                 await self._update_progress_trend(user_id)
+            except Exception as e:
+                logger.warning(
+                    f"Failed to update trend after progress recording",
+                    extra={"user_id": user_id, "error": str(e)}
+                )
 
-                # Check for stagnation
+            # Check for stagnation (non-blocking)
+            try:
                 await self.detect_stagnation(user_id)
+            except Exception as e:
+                logger.warning(
+                    f"Failed to check stagnation",
+                    extra={"user_id": user_id, "error": str(e)}
+                )
 
-            return success
+            return True
 
+        except (GoalNotFoundException, DatabaseOperationException):
+            raise
         except Exception as e:
-            logger.error(f"Error recording progress for {user_id}: {e}")
-            return False
+            logger.error(
+                f"Unexpected error recording progress",
+                extra={
+                    "user_id": user_id,
+                    "error": str(e),
+                    "traceback": traceback.format_exc()
+                }
+            )
+            raise DatabaseOperationException(user_id, "record_progress", e)
 
     async def setup_tracked_metrics(
         self,
@@ -227,20 +393,57 @@ Requirements:
     ) -> bool:
         """Configure which metrics to track for a goal"""
         try:
+            logger.info(
+                f"Setting up tracked metrics",
+                extra={"user_id": user_id, "metrics": metric_names}
+            )
+
             tracker = await self.db.get_goal_progress(user_id)
             if not tracker:
-                logger.warning(f"Cannot setup metrics - no tracker found for {user_id}")
-                return False
+                logger.warning(
+                    f"Cannot setup metrics - no goal found",
+                    extra={"user_id": user_id}
+                )
+                raise GoalNotFoundException(user_id)
 
             tracker.tracked_metrics = metric_names
             tracker.metric_units = metric_units
             tracker.updated_at = datetime.now()
 
-            return await self.db.save_goal_progress(tracker)
+            try:
+                success = await self.db.save_goal_progress(tracker)
+                if not success:
+                    raise DatabaseOperationException(
+                        user_id,
+                        "save_goal_progress",
+                        Exception("Database returned False")
+                    )
 
+                logger.info(
+                    f"Metrics configured successfully",
+                    extra={"user_id": user_id, "metric_count": len(metric_names)}
+                )
+                return True
+
+            except Exception as e:
+                raise DatabaseOperationException(
+                    user_id,
+                    "save_goal_progress",
+                    e
+                )
+
+        except (GoalNotFoundException, DatabaseOperationException):
+            raise
         except Exception as e:
-            logger.error(f"Error setting up metrics for {user_id}: {e}")
-            return False
+            logger.error(
+                f"Unexpected error setting up metrics",
+                extra={
+                    "user_id": user_id,
+                    "error": str(e),
+                    "traceback": traceback.format_exc()
+                }
+            )
+            raise DatabaseOperationException(user_id, "setup_tracked_metrics", e)
 
     # ==================== Progress Analysis ====================
 
@@ -408,7 +611,35 @@ Requirements:
         user_profile: Optional[UserProfile] = None
     ) -> List[GoalInsight]:
         """Generate AI-powered insights about user's progress"""
+        user_id = tracker.user_id
+
         try:
+            logger.info(
+                f"Generating progress insights",
+                extra={
+                    "user_id": user_id,
+                    "snapshots": len(tracker.snapshots),
+                    "milestones": len(tracker.milestones)
+                }
+            )
+
+            # Check if there's enough data
+            if len(tracker.snapshots) < 2:
+                logger.info(
+                    f"Insufficient data for insights",
+                    extra={"user_id": user_id, "snapshots": len(tracker.snapshots)}
+                )
+                # Return encouragement insight for new users
+                return [
+                    GoalInsight(
+                        insight_type="encouragement",
+                        title="시작이 반입니다!",
+                        description="목표를 설정하셨네요! 꾸준히 진행 상황을 기록하시면 더 상세한 인사이트를 제공해드릴게요.",
+                        actionable=False,
+                        priority=1
+                    )
+                ]
+
             insights = []
 
             # Build context for AI
@@ -438,37 +669,110 @@ Return ONLY a JSON array of insights with this exact structure:
 
 Keep insights personal, specific, and motivating."""
 
-            response = await self.gemini.generate_content(prompt)
+            try:
+                response = await self.gemini.generate_content(prompt)
+            except Exception as e:
+                logger.error(
+                    f"Gemini API failed for insights",
+                    extra={"user_id": user_id, "error": str(e)}
+                )
+                raise AIServiceException(user_id, "insight_generation", e)
 
             # Parse response
-            response_text = response.strip()
-            if response_text.startswith("```json"):
-                response_text = response_text[7:-3].strip()
-            elif response_text.startswith("```"):
-                response_text = response_text[3:-3].strip()
+            try:
+                response_text = response.strip()
+                if response_text.startswith("```json"):
+                    response_text = response_text[7:-3].strip()
+                elif response_text.startswith("```"):
+                    response_text = response_text[3:-3].strip()
 
-            insights_data = json.loads(response_text)
+                insights_data = json.loads(response_text)
+
+                if not isinstance(insights_data, list):
+                    raise ValueError("AI response is not a JSON array")
+
+            except (json.JSONDecodeError, ValueError) as e:
+                logger.error(
+                    f"Failed to parse AI insights response",
+                    extra={
+                        "user_id": user_id,
+                        "error": str(e),
+                        "response_preview": response_text[:200] if response_text else "empty"
+                    }
+                )
+                raise AIServiceException(user_id, "insight_parsing", e)
 
             # Convert to GoalInsight objects
-            for data in insights_data:
-                insight = GoalInsight(
-                    insight_type=data["insight_type"],
-                    title=data["title"],
-                    description=data["description"],
-                    actionable=data.get("actionable", False),
-                    priority=data.get("priority", 0)
+            for i, data in enumerate(insights_data):
+                try:
+                    insight = GoalInsight(
+                        insight_type=data["insight_type"],
+                        title=data["title"],
+                        description=data["description"],
+                        actionable=data.get("actionable", False),
+                        priority=data.get("priority", 0)
+                    )
+                    insights.append(insight)
+                except (KeyError, ValueError) as e:
+                    logger.warning(
+                        f"Skipping invalid insight {i+1}",
+                        extra={"user_id": user_id, "error": str(e), "data": data}
+                    )
+                    continue
+
+            if not insights:
+                logger.warning(
+                    f"AI generated no valid insights",
+                    extra={"user_id": user_id}
                 )
-                insights.append(insight)
+                # Return generic insight
+                return [
+                    GoalInsight(
+                        insight_type="encouragement",
+                        title="계속 나아가고 있습니다",
+                        description="목표를 향해 꾸준히 진행하고 계시네요. 계속 이렇게 진행해주세요!",
+                        actionable=False,
+                        priority=1
+                    )
+                ]
 
             # Update last insight generation time
-            tracker.last_insight_generated = datetime.now()
-            await self.db.save_goal_progress(tracker)
+            try:
+                tracker.last_insight_generated = datetime.now()
+                await self.db.save_goal_progress(tracker)
+            except Exception as e:
+                logger.warning(
+                    f"Failed to update last_insight_generated timestamp",
+                    extra={"user_id": user_id, "error": str(e)}
+                )
 
-            logger.info(f"Generated {len(insights)} insights for user {tracker.user_id}")
+            logger.info(
+                f"Successfully generated {len(insights)} insights",
+                extra={"user_id": user_id}
+            )
             return insights
 
+        except AIServiceException:
+            # Return generic fallback insight
+            logger.info(f"Returning fallback insight due to AI service failure")
+            return [
+                GoalInsight(
+                    insight_type="encouragement",
+                    title="계속 나아가고 있습니다",
+                    description="목표를 향해 꾸준히 진행하고 계시네요. AI 인사이트를 생성하는 데 일시적인 문제가 발생했지만, 여러분의 노력은 계속되고 있습니다!",
+                    actionable=False,
+                    priority=1
+                )
+            ]
         except Exception as e:
-            logger.error(f"Error generating progress insights: {e}")
+            logger.error(
+                f"Unexpected error generating insights",
+                extra={
+                    "user_id": user_id,
+                    "error": str(e),
+                    "traceback": traceback.format_exc()
+                }
+            )
             return []
 
     def _build_insight_context(

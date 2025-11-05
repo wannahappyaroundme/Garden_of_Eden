@@ -34,6 +34,18 @@ from models.api_schemas import (
     LearningEventResponse,
     HealthResponse
 )
+from exceptions.goal_exceptions import (
+    GoalProgressException,
+    GoalNotFoundException,
+    MilestoneNotFoundException,
+    OneThingNotSetException,
+    InvalidMetricsConfigException,
+    InvalidMoodRatingException,
+    InvalidDateFormatException,
+    AIServiceException,
+    DatabaseOperationException,
+    InsufficientDataException
+)
 from utils.logger import get_logger
 from utils.constants import PersonaType, get_profile_maturity
 
@@ -132,6 +144,157 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ==================== Global Exception Handlers ====================
+
+@app.exception_handler(GoalNotFoundException)
+async def goal_not_found_handler(request: Request, exc: GoalNotFoundException):
+    """Handle goal not found errors with user-friendly messages"""
+    logger.warning(f"Goal not found: {exc.message}", extra={"user_id": exc.user_id})
+    return JSONResponse(
+        status_code=404,
+        content={
+            "detail": exc.message,
+            "error_type": "goal_not_found",
+            "user_id": exc.user_id
+        }
+    )
+
+
+@app.exception_handler(OneThingNotSetException)
+async def one_thing_not_set_handler(request: Request, exc: OneThingNotSetException):
+    """Handle One Thing not set errors"""
+    logger.warning(f"One Thing not set: {exc.message}", extra={"user_id": exc.user_id})
+    return JSONResponse(
+        status_code=400,
+        content={
+            "detail": exc.message,
+            "error_type": "one_thing_not_set",
+            "user_id": exc.user_id,
+            "action_required": "complete_onboarding"
+        }
+    )
+
+
+@app.exception_handler(MilestoneNotFoundException)
+async def milestone_not_found_handler(request: Request, exc: MilestoneNotFoundException):
+    """Handle milestone not found errors"""
+    logger.warning(f"Milestone not found: {exc.message}", extra={"user_id": exc.user_id})
+    return JSONResponse(
+        status_code=404,
+        content={
+            "detail": exc.message,
+            "error_type": "milestone_not_found",
+            "user_id": exc.user_id
+        }
+    )
+
+
+@app.exception_handler(InvalidMetricsConfigException)
+async def invalid_metrics_handler(request: Request, exc: InvalidMetricsConfigException):
+    """Handle invalid metrics configuration errors"""
+    logger.warning(f"Invalid metrics config: {exc.message}", extra={"user_id": exc.user_id})
+    return JSONResponse(
+        status_code=400,
+        content={
+            "detail": exc.message,
+            "error_type": "invalid_metrics_config",
+            "user_id": exc.user_id,
+            "reason": exc.reason
+        }
+    )
+
+
+@app.exception_handler(InvalidMoodRatingException)
+async def invalid_mood_handler(request: Request, exc: InvalidMoodRatingException):
+    """Handle invalid mood rating errors"""
+    logger.warning(f"Invalid mood rating: {exc.message}", extra={"user_id": exc.user_id})
+    return JSONResponse(
+        status_code=400,
+        content={
+            "detail": exc.message,
+            "error_type": "invalid_mood_rating",
+            "user_id": exc.user_id,
+            "provided_value": exc.mood_value
+        }
+    )
+
+
+@app.exception_handler(InvalidDateFormatException)
+async def invalid_date_handler(request: Request, exc: InvalidDateFormatException):
+    """Handle invalid date format errors"""
+    logger.warning(f"Invalid date format: {exc.message}", extra={"user_id": exc.user_id})
+    return JSONResponse(
+        status_code=400,
+        content={
+            "detail": exc.message,
+            "error_type": "invalid_date_format",
+            "user_id": exc.user_id,
+            "provided_value": exc.date_value
+        }
+    )
+
+
+@app.exception_handler(AIServiceException)
+async def ai_service_handler(request: Request, exc: AIServiceException):
+    """Handle AI service errors (non-critical, fallback used)"""
+    logger.error(
+        f"AI service error: {exc.message}",
+        extra={
+            "user_id": exc.user_id,
+            "operation": exc.operation,
+            "original_error": str(exc.original_error) if exc.original_error else None
+        }
+    )
+    return JSONResponse(
+        status_code=200,  # Return 200 since we use fallback
+        content={
+            "detail": exc.message,
+            "error_type": "ai_service_degraded",
+            "status": "success_with_fallback",
+            "user_id": exc.user_id
+        }
+    )
+
+
+@app.exception_handler(DatabaseOperationException)
+async def database_operation_handler(request: Request, exc: DatabaseOperationException):
+    """Handle database operation errors"""
+    logger.error(
+        f"Database error: {exc.message}",
+        extra={
+            "user_id": exc.user_id,
+            "operation": exc.operation,
+            "original_error": str(exc.original_error) if exc.original_error else None
+        }
+    )
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": exc.message,
+            "error_type": "database_error",
+            "user_id": exc.user_id,
+            "operation": exc.operation
+        }
+    )
+
+
+@app.exception_handler(InsufficientDataException)
+async def insufficient_data_handler(request: Request, exc: InsufficientDataException):
+    """Handle insufficient data for analysis errors"""
+    logger.info(f"Insufficient data: {exc.message}", extra={"user_id": exc.user_id})
+    return JSONResponse(
+        status_code=200,  # Return 200 with informational message
+        content={
+            "detail": exc.message,
+            "error_type": "insufficient_data",
+            "user_id": exc.user_id,
+            "required_count": exc.required_count,
+            "actual_count": exc.actual_count,
+            "status": "success_with_limitation"
+        }
+    )
 
 
 # ==================== Dependencies ====================
@@ -675,50 +838,37 @@ async def create_goal(
     Returns:
         Goal tracker information
     """
-    try:
-        # Get user profile
-        profile = await db.get_user_profile(user_id)
+    # Get user profile
+    profile = await db.get_user_profile(user_id)
 
-        if not profile:
-            raise HTTPException(status_code=404, detail=f"Profile not found for user {user_id}")
+    if not profile:
+        raise HTTPException(status_code=404, detail=f"프로필을 찾을 수 없습니다 (User: {user_id})")
 
-        if not profile.one_thing or not profile.one_thing.value:
-            raise HTTPException(status_code=400, detail="User has not set their One Thing yet")
+    # Parse target date if provided
+    target = None
+    if target_date:
+        try:
+            from datetime import date as date_cls
+            target = date_cls.fromisoformat(target_date)
+        except ValueError:
+            raise InvalidDateFormatException(user_id, target_date)
 
-        # Parse target date if provided
-        target = None
-        if target_date:
-            try:
-                from datetime import date as date_cls
-                target = date_cls.fromisoformat(target_date)
-            except ValueError:
-                raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    # Create goal tracker (this will raise custom exceptions if errors occur)
+    tracker = await goal_service.create_goal_from_one_thing(
+        user_profile=profile,
+        target_date=target,
+        description=description
+    )
 
-        # Create goal tracker
-        tracker = await goal_service.create_goal_from_one_thing(
-            user_profile=profile,
-            target_date=target,
-            description=description
-        )
-
-        if not tracker:
-            raise HTTPException(status_code=500, detail="Failed to create goal tracker")
-
-        return {
-            "goal_id": tracker.goal_id,
-            "one_thing": tracker.one_thing,
-            "description": tracker.description,
-            "start_date": tracker.start_date.isoformat(),
-            "target_date": tracker.target_date.isoformat() if tracker.target_date else None,
-            "milestones_count": len(tracker.milestones),
-            "created": True
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error creating goal: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    return {
+        "goal_id": tracker.goal_id,
+        "one_thing": tracker.one_thing,
+        "description": tracker.description,
+        "start_date": tracker.start_date.isoformat(),
+        "target_date": tracker.target_date.isoformat() if tracker.target_date else None,
+        "milestones_count": len(tracker.milestones),
+        "created": True
+    }
 
 
 @app.get("/api/v2/goals/{user_id}", tags=["Goals"])
