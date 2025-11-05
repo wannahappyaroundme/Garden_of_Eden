@@ -125,3 +125,115 @@ class CameraFrame {
     required this.timestamp,
   });
 }
+
+/// Onboarding Response from backend
+/// Used for Socratic dialogue onboarding flow
+class OnboardingResponse {
+  final String sessionId;
+  final String? question;
+  final int? step;
+  final int? totalSteps;
+  final bool completed;
+  final String? message;
+  final OnboardingResult? result;
+
+  OnboardingResponse({
+    required this.sessionId,
+    this.question,
+    this.step,
+    this.totalSteps,
+    required this.completed,
+    this.message,
+    this.result,
+  });
+
+  factory OnboardingResponse.fromJson(Map<String, dynamic> json) {
+    return OnboardingResponse(
+      sessionId: json['session_id'] as String,
+      question: json['question'] as String?,
+      step: json['step'] as int?,
+      totalSteps: json['total_steps'] as int?,
+      completed: json['completed'] as bool? ?? false,
+      message: json['message'] as String?,
+      result: json['result'] != null
+          ? OnboardingResult.fromJson(json['result'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+}
+
+/// Onboarding Result after completion
+class OnboardingResult {
+  final String userId;
+  final String oneThing;
+  final String? coreIdentity;
+  final String? coreMotivation;
+  final List<String> personalityHints;
+  final String conversationSummary;
+
+  OnboardingResult({
+    required this.userId,
+    required this.oneThing,
+    this.coreIdentity,
+    this.coreMotivation,
+    required this.personalityHints,
+    required this.conversationSummary,
+  });
+
+  factory OnboardingResult.fromJson(Map<String, dynamic> json) {
+    final hints = json['personality_hints'] as List? ?? [];
+    return OnboardingResult(
+      userId: json['user_id'] as String,
+      oneThing: json['one_thing'] as String,
+      coreIdentity: json['core_identity'] as String?,
+      coreMotivation: json['core_motivation'] as String?,
+      personalityHints: hints.map((h) => h as String).toList(),
+      conversationSummary: json['conversation_summary'] as String? ?? '',
+    );
+  }
+}
+
+/// Session Information
+/// Used for tracking continuous conversation sessions
+class SessionInfo {
+  final String sessionId;
+  final String userId;
+  final String persona;
+  final int turnCount;
+  final DateTime createdAt;
+  final DateTime lastActivity;
+  final bool isActive;
+  final bool isExpired;
+
+  SessionInfo({
+    required this.sessionId,
+    required this.userId,
+    required this.persona,
+    required this.turnCount,
+    required this.createdAt,
+    required this.lastActivity,
+    required this.isActive,
+    required this.isExpired,
+  });
+
+  factory SessionInfo.fromJson(Map<String, dynamic> json) {
+    return SessionInfo(
+      sessionId: json['session_id'] as String,
+      userId: json['user_id'] as String,
+      persona: json['persona'] as String,
+      turnCount: json['turn_count'] as int? ?? 0,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      lastActivity: DateTime.parse(json['last_activity'] as String),
+      isActive: json['is_active'] as bool? ?? false,
+      isExpired: json['is_expired'] as bool? ?? false,
+    );
+  }
+
+  /// Check if session needs refresh (close to expiration)
+  bool needsRefresh() {
+    final now = DateTime.now();
+    final timeSinceActivity = now.difference(lastActivity);
+    // Refresh if inactive for more than 8 minutes (TTL is 10 minutes)
+    return timeSinceActivity.inMinutes > 8;
+  }
+}
