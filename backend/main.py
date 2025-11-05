@@ -26,6 +26,7 @@ from services.master_directive_processor import MasterDirectiveProcessor
 from services.onboarding_service import OnboardingService
 from services.session_manager import SessionManager
 from services.goal_progress_service import GoalProgressService
+from services.analytics_service import AnalyticsService
 from models.api_schemas import (
     ChatResponse,
     ProfileResponse,
@@ -60,6 +61,7 @@ app_start_time = time.time()
 # Global service instances
 db_service: Optional[DynamoDBService] = None
 llm_service: Optional[GeminiService] = None
+analytics_service: Optional[AnalyticsService] = None
 stt_service: Optional[STTService] = None
 tts_service: Optional[TTSService] = None
 master_processor: Optional[MasterDirectiveProcessor] = None
@@ -72,7 +74,7 @@ goal_progress_service: Optional[GoalProgressService] = None
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup/shutdown"""
     # Startup
-    global db_service, llm_service, stt_service, tts_service, master_processor, onboarding_service, session_manager, goal_progress_service
+    global db_service, llm_service, stt_service, tts_service, master_processor, onboarding_service, session_manager, goal_progress_service, analytics_service
 
     logger.info("Starting Project Eden V2 Backend...")
 
@@ -105,6 +107,9 @@ async def lifespan(app: FastAPI):
             db_service=db_service,
             gemini_service=llm_service
         )
+
+        # Initialize analytics service
+        analytics_service = AnalyticsService(db_service=db_service)
 
         # Initialize master processor with session manager
         master_processor = MasterDirectiveProcessor(
@@ -332,6 +337,13 @@ def get_goal_progress_service() -> GoalProgressService:
     if goal_progress_service is None:
         raise HTTPException(status_code=500, detail="Goal progress service not initialized")
     return goal_progress_service
+
+
+def get_analytics_service() -> AnalyticsService:
+    """Dependency to get analytics service"""
+    if analytics_service is None:
+        raise HTTPException(status_code=500, detail="Analytics service not initialized")
+    return analytics_service
 
 
 # ==================== API Endpoints ====================
@@ -1157,6 +1169,73 @@ async def generate_insights(
     except Exception as e:
         logger.error(f"Error generating insights: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== Analytics Endpoints ====================
+
+@app.get("/api/v2/analytics/{user_id}/timeline", tags=["Analytics"])
+async def get_progress_timeline(
+    user_id: str,
+    days: int = 30,
+    analytics_service: AnalyticsService = Depends(get_analytics_service)
+):
+    """
+    Get time series data for progress visualization
+
+    Returns dates, completion trend, mood trend, metrics over time, and daily streaks
+    """
+    timeline = await analytics_service.get_progress_timeline(user_id, days)
+    return timeline
+
+
+@app.get("/api/v2/analytics/{user_id}/statistics", tags=["Analytics"])
+async def get_progress_statistics(
+    user_id: str,
+    days: int = 30,
+    analytics_service: AnalyticsService = Depends(get_analytics_service)
+):
+    """
+    Get statistical analysis of progress data
+
+    Returns mood stats, consistency score, velocity, productivity patterns, and metric stats
+    """
+    statistics_data = await analytics_service.get_progress_statistics(user_id, days)
+    return statistics_data
+
+
+@app.get("/api/v2/analytics/{user_id}/patterns", tags=["Analytics"])
+async def detect_patterns(
+    user_id: str,
+    days: int = 30,
+    analytics_service: AnalyticsService = Depends(get_analytics_service)
+):
+    """
+    Detect behavioral patterns in progress data
+
+    Returns streak patterns, mood patterns, productivity by weekday, and insights
+    """
+    patterns = await analytics_service.detect_patterns(user_id, days)
+    return patterns
+
+
+@app.get("/api/v2/analytics/{user_id}/comparison", tags=["Analytics"])
+async def get_period_comparison(
+    user_id: str,
+    period1_days: int = 7,
+    period2_days: int = 14,
+    analytics_service: AnalyticsService = Depends(get_analytics_service)
+):
+    """
+    Compare two time periods (e.g., this week vs last two weeks)
+
+    Returns comparison of mood, entries, and overall trend between periods
+    """
+    comparison = await analytics_service.get_period_comparison(
+        user_id,
+        period1_days,
+        period2_days
+    )
+    return comparison
 
 
 # ==================== Error Handlers ====================
