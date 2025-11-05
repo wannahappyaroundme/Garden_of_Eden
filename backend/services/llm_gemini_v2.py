@@ -88,6 +88,9 @@ class GeminiService:
             # Build profile context
             profile_context = user_profile.to_context_string()
 
+            # Build learning preferences context (NEW - for weighted mentor adaptation)
+            learning_preferences_context = user_profile.get_learning_preferences_context()
+
             # Build recent memory
             recent_memory = self._format_recent_conversations(recent_conversations)
 
@@ -129,6 +132,7 @@ class GeminiService:
             master_directive = build_master_directive(
                 user_message=user_message,
                 user_profile_context=profile_context,
+                learning_preferences_context=learning_preferences_context,  # NEW
                 persona_name=persona_name,
                 recent_memory=recent_memory,
                 visual_context=visual_context,
@@ -257,6 +261,29 @@ class GeminiService:
                 lines.append(f"[{timestamp}] {role}: {msg.content[:100]}...")
 
         return "\n".join(lines)
+
+    async def generate_text_only_response(
+        self,
+        prompt: str,
+        max_tokens: int = 500
+    ) -> str:
+        """Generate a simple text-only response without persona or profile context"""
+        try:
+            response = self.model.generate_content(
+                prompt,
+                generation_config={
+                    "max_output_tokens": max_tokens,
+                    "temperature": 0.7
+                }
+            )
+
+            text = response.text.strip()
+            logger.debug(f"Generated text-only response: {text[:100]}...")
+            return text
+
+        except Exception as e:
+            logger.error(f"Error generating text-only response: {e}")
+            return "죄송합니다. 응답 생성 중 오류가 발생했습니다."
 
     async def extract_topic_from_text(self, text: str) -> str:
         """Extract main topic from user's message (for pitfall detection)"""
