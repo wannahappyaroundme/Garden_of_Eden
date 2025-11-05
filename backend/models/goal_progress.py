@@ -65,7 +65,7 @@ class Milestone(BaseModel):
 class ProgressSnapshot(BaseModel):
     """Single progress snapshot/entry"""
     snapshot_id: str  # Unique identifier
-    date: date = Field(default_factory=date.today)
+    snapshot_date: date = Field(default_factory=date.today)
     metrics: List[GoalMetric] = Field(default_factory=list)
     reflection: Optional[str] = None  # User's reflection on progress
     mood_rating: Optional[MoodRating] = None

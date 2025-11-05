@@ -255,7 +255,7 @@ Requirements:
                 return None
 
             # Sort by date (oldest first for analysis)
-            sorted_snapshots = sorted(snapshots, key=lambda s: s.date)
+            sorted_snapshots = sorted(snapshots, key=lambda s: s.snapshot_date)
 
             # Calculate streak
             current_streak = self._calculate_current_streak(sorted_snapshots)
@@ -341,9 +341,9 @@ Requirements:
             snapshot = sorted_snapshots[i]
             expected_date = current_date - timedelta(days=streak)
 
-            if snapshot.date == expected_date:
+            if snapshot.snapshot_date == expected_date:
                 streak += 1
-            elif snapshot.date < expected_date:
+            elif snapshot.snapshot_date < expected_date:
                 # Gap found
                 break
 
@@ -379,8 +379,8 @@ Requirements:
                 return None
 
             # Get most recent snapshot
-            most_recent = max(tracker.snapshots, key=lambda s: s.date)
-            days_since_last = (date.today() - most_recent.date).days
+            most_recent = max(tracker.snapshots, key=lambda s: s.snapshot_date)
+            days_since_last = (date.today() - most_recent.snapshot_date).days
 
             if days_since_last >= threshold_days:
                 insight = GoalInsight(
@@ -506,8 +506,8 @@ Keep insights personal, specific, and motivating."""
 
         # Recent snapshot
         if tracker.snapshots:
-            recent = max(tracker.snapshots, key=lambda s: s.date)
-            context_parts.append(f"Most recent entry: {recent.date.isoformat()}")
+            recent = max(tracker.snapshots, key=lambda s: s.snapshot_date)
+            context_parts.append(f"Most recent entry: {recent.snapshot_date.isoformat()}")
             if recent.reflection:
                 context_parts.append(f"Recent reflection: {recent.reflection}")
 
@@ -638,9 +638,9 @@ Keep insights personal, specific, and motivating."""
 
             # Add most recent snapshot if available
             if tracker.snapshots:
-                recent = max(tracker.snapshots, key=lambda s: s.date)
+                recent = max(tracker.snapshots, key=lambda s: s.snapshot_date)
                 summary["recent_snapshot"] = {
-                    "date": recent.date.isoformat(),
+                    "date": recent.snapshot_date.isoformat(),
                     "reflection": recent.reflection,
                     "mood": recent.mood_rating,
                     "metrics": [
