@@ -4,6 +4,7 @@ Simple dictionary-based storage to avoid DynamoDB setup
 """
 from datetime import datetime
 from typing import Optional, List, Dict, Any
+from cachetools import TTLCache
 from models.user_profile import UserProfile
 from models.conversation import Conversation, LearningEvent
 from utils.logger import get_logger
@@ -12,21 +13,33 @@ logger = get_logger(__name__)
 
 
 class MemoryDBService:
-    """In-memory database service for testing"""
+    """In-memory database service for testing with profile caching"""
 
-    def __init__(self, **kwargs):
+    def __init__(self, cache_ttl_seconds: int = 300, **kwargs):
         self.profiles: Dict[str, UserProfile] = {}
         self.conversations: Dict[str, List[Conversation]] = {}
         self.learning_events: Dict[str, List[LearningEvent]] = {}
-        logger.info("Memory DB service initialized (in-memory storage)")
+
+        # Profile cache with 5-minute TTL (configurable)
+        self.profile_cache = TTLCache(maxsize=1000, ttl=cache_ttl_seconds)
+
+        logger.info(f"Memory DB service initialized (in-memory storage with {cache_ttl_seconds}s profile cache)")
 
     # ==================== User Profile Operations ====================
 
     async def get_user_profile(self, user_id: str) -> Optional[UserProfile]:
-        """Get user profile by user_id"""
+        """Get user profile by user_id with caching"""
+        # Check cache first
+        if user_id in self.profile_cache:
+            logger.debug(f"Profile cache HIT for user {user_id}")
+            return self.profile_cache[user_id]
+
+        # Cache miss - load from storage
         profile = self.profiles.get(user_id)
         if profile:
-            logger.info(f"Retrieved profile for user {user_id}, version {profile.profile_version}")
+            logger.info(f"Profile cache MISS - Retrieved profile for user {user_id}, version {profile.profile_version}")
+            # Update cache
+            self.profile_cache[user_id] = profile
         else:
             logger.info(f"Profile not found for user: {user_id}")
         return profile
@@ -44,6 +57,8 @@ class MemoryDBService:
             profile.one_thing = one_thing
 
         self.profiles[user_id] = profile
+        # Update cache
+        self.profile_cache[user_id] = profile
         logger.info(f"Created new profile for user: {user_id}")
         return profile
 
@@ -59,7 +74,23 @@ class MemoryDBService:
         profile.last_updated = datetime.now()
         profile.profile_version += 1
         self.profiles[profile.user_id] = profile
-        logger.info(f"Updated profile for user {profile.user_id}, new version: {profile.profile_version}")
+        # Invalidate cache to force reload
+        if profile.user_id in self.profile_cache:
+            del self.profile_cache[profile.user_id]
+        logger.info(f"Updated profile for user {profile.user_id}, new version: {profile.profile_version} (cache invalidated)")
+        return profile
+
+    async def update_profile_one_thing(self, user_id: str, one_thing: str) -> UserProfile:
+        """Update user's One Thing"""
+        profile = await self.get_or_create_profile(user_id)
+        profile.one_thing = one_thing
+        profile.last_updated = datetime.now()
+        profile.profile_version += 1
+        self.profiles[user_id] = profile
+        # Invalidate cache
+        if user_id in self.profile_cache:
+            del self.profile_cache[user_id]
+        logger.info(f"Updated One Thing for user {user_id}: {one_thing} (cache invalidated)")
         return profile
 
     # ==================== Conversation Operations ====================

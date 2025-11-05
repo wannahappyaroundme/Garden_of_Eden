@@ -23,6 +23,8 @@ from services.llm_gemini_v2 import GeminiService
 from services.stt_service import STTService
 from services.tts_service import TTSService
 from services.master_directive_processor import MasterDirectiveProcessor
+from services.onboarding_service import OnboardingService
+from services.session_manager import SessionManager
 from models.api_schemas import (
     ChatResponse,
     ProfileResponse,
@@ -48,13 +50,15 @@ llm_service: Optional[GeminiService] = None
 stt_service: Optional[STTService] = None
 tts_service: Optional[TTSService] = None
 master_processor: Optional[MasterDirectiveProcessor] = None
+onboarding_service: Optional[OnboardingService] = None
+session_manager: Optional[SessionManager] = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup/shutdown"""
     # Startup
-    global db_service, llm_service, stt_service, tts_service, master_processor
+    global db_service, llm_service, stt_service, tts_service, master_processor, onboarding_service, session_manager
 
     logger.info("Starting Project Eden V2 Backend...")
 
@@ -75,11 +79,20 @@ async def lifespan(app: FastAPI):
         stt_service = STTService(api_key=os.getenv("GROQ_API_KEY"))
         tts_service = TTSService()
 
+        # Initialize onboarding and session services
+        onboarding_service = OnboardingService(
+            llm_service=llm_service,
+            db_service=db_service
+        )
+        session_manager = SessionManager()
+
+        # Initialize master processor with session manager
         master_processor = MasterDirectiveProcessor(
             db_service=db_service,
             llm_service=llm_service,
             stt_service=stt_service,
-            tts_service=tts_service
+            tts_service=tts_service,
+            session_manager=session_manager
         )
 
         logger.info("✅ All services initialized successfully")
@@ -126,6 +139,20 @@ def get_db_service() -> DynamoDBService:
     if db_service is None:
         raise HTTPException(status_code=500, detail="Database service not initialized")
     return db_service
+
+
+def get_onboarding_service() -> OnboardingService:
+    """Dependency to get onboarding service"""
+    if onboarding_service is None:
+        raise HTTPException(status_code=500, detail="Onboarding service not initialized")
+    return onboarding_service
+
+
+def get_session_manager() -> SessionManager:
+    """Dependency to get session manager"""
+    if session_manager is None:
+        raise HTTPException(status_code=500, detail="Session manager not initialized")
+    return session_manager
 
 
 # ==================== API Endpoints ====================
@@ -371,6 +398,243 @@ async def transcribe_audio(
         raise
     except Exception as e:
         logger.error(f"Error in STT endpoint: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== Onboarding Endpoints ====================
+
+@app.post("/api/v2/onboarding/start", tags=["Onboarding"])
+async def start_onboarding(
+    user_id: str = Form(...),
+    persona: str = Form("adam"),
+    onboarding: OnboardingService = Depends(get_onboarding_service)
+):
+    """
+    Start a new onboarding session
+
+    Args:
+        user_id: User ID
+        persona: Persona type (adam or eve)
+
+    Returns:
+        session_id and first question
+    """
+    try:
+        # Validate persona
+        try:
+            persona_type = PersonaType(persona)
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Invalid persona: {persona}. Must be 'adam' or 'eve'")
+
+        # Start session
+        session = await onboarding.start_onboarding(user_id=user_id, persona=persona_type)
+
+        # Get first question
+        first_question = await onboarding.get_first_question(session.session_id)
+
+        return {
+            "session_id": session.session_id,
+            "question": first_question,
+            "step": 1,
+            "total_steps": 6
+        }
+
+    except Exception as e:
+        logger.error(f"Error starting onboarding: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v2/onboarding/respond", tags=["Onboarding"])
+async def respond_to_onboarding(
+    session_id: str = Form(...),
+    user_response: str = Form(...),
+    onboarding: OnboardingService = Depends(get_onboarding_service)
+):
+    """
+    Process user response to onboarding question
+
+    Args:
+        session_id: Onboarding session ID
+        user_response: User's response text
+
+    Returns:
+        Next question or completion result
+    """
+    try:
+        # Process response
+        result = await onboarding.process_response(
+            session_id=session_id,
+            user_response=user_response
+        )
+
+        return result
+
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error processing onboarding response: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v2/onboarding/status/{session_id}", tags=["Onboarding"])
+async def get_onboarding_status(
+    session_id: str,
+    onboarding: OnboardingService = Depends(get_onboarding_service)
+):
+    """Get onboarding session status"""
+    try:
+        session = await onboarding.get_session(session_id)
+
+        if not session:
+            raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+
+        return {
+            "session_id": session.session_id,
+            "user_id": session.user_id,
+            "persona": session.persona.value,
+            "current_step": session.current_step,
+            "completed": session.completed,
+            "one_thing_identified": session.one_thing_identified,
+            "turn_count": len(session.turns)
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting onboarding status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== Session Management Endpoints ====================
+
+@app.post("/api/v2/session/create", tags=["Session"])
+async def create_session(
+    user_id: str = Form(...),
+    persona: str = Form("adam"),
+    session_mgr: SessionManager = Depends(get_session_manager)
+):
+    """
+    Create a new conversation session
+
+    Args:
+        user_id: User ID
+        persona: Persona type (adam or eve)
+
+    Returns:
+        Session information
+    """
+    try:
+        # Validate persona
+        try:
+            persona_type = PersonaType(persona)
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Invalid persona: {persona}. Must be 'adam' or 'eve'")
+
+        # Create session
+        session = await session_mgr.create_session(user_id=user_id, persona=persona_type)
+
+        return {
+            "session_id": session.session_id,
+            "user_id": session.user_id,
+            "persona": session.persona.value,
+            "created_at": session.created_at.isoformat(),
+            "is_active": session.is_active
+        }
+
+    except Exception as e:
+        logger.error(f"Error creating session: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v2/session/{session_id}", tags=["Session"])
+async def get_session_info(
+    session_id: str,
+    session_mgr: SessionManager = Depends(get_session_manager)
+):
+    """Get session information"""
+    try:
+        session_info = await session_mgr.get_session_info(session_id)
+
+        if not session_info:
+            raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+
+        return {
+            "session_id": session_info.session_id,
+            "user_id": session_info.user_id,
+            "persona": session_info.persona.value,
+            "turn_count": session_info.turn_count,
+            "created_at": session_info.created_at.isoformat(),
+            "last_activity": session_info.last_activity.isoformat(),
+            "is_active": session_info.is_active,
+            "is_expired": session_info.is_expired
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting session info: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v2/session/{session_id}/close", tags=["Session"])
+async def close_session(
+    session_id: str,
+    reason: str = Form(default="user_request"),
+    session_mgr: SessionManager = Depends(get_session_manager)
+):
+    """Close a conversation session"""
+    try:
+        await session_mgr.close_session(session_id, reason=reason)
+
+        return {
+            "session_id": session_id,
+            "status": "closed",
+            "reason": reason
+        }
+
+    except Exception as e:
+        logger.error(f"Error closing session: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v2/session/user/{user_id}", tags=["Session"])
+async def get_user_active_session(
+    user_id: str,
+    session_mgr: SessionManager = Depends(get_session_manager)
+):
+    """Get user's active session if exists"""
+    try:
+        session = await session_mgr.get_user_active_session(user_id)
+
+        if not session:
+            return {"active_session": None}
+
+        return {
+            "active_session": {
+                "session_id": session.session_id,
+                "persona": session.persona.value,
+                "turn_count": len(session.turns),
+                "created_at": session.created_at.isoformat(),
+                "last_activity": session.last_activity.isoformat()
+            }
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting user active session: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v2/session/stats", tags=["Session"])
+async def get_session_stats(
+    session_mgr: SessionManager = Depends(get_session_manager)
+):
+    """Get session statistics"""
+    try:
+        stats = session_mgr.get_stats()
+        return stats
+
+    except Exception as e:
+        logger.error(f"Error getting session stats: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

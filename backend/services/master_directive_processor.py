@@ -20,6 +20,7 @@ from services.profile_learning_service import ProfileLearningService
 from services.pitfall_detection_service import PitfallDetectionService
 from services.retrieval_augmented_generation_service import RAGService
 from services.web_search_service import WebSearchService
+from services.session_manager import SessionManager
 from utils.logger import get_logger
 from utils.constants import PersonaType, LearningEventType
 
@@ -37,13 +38,15 @@ class MasterDirectiveProcessor:
         db_service: DynamoDBService,
         llm_service: GeminiService,
         stt_service: STTService,
-        tts_service: TTSService
+        tts_service: TTSService,
+        session_manager: Optional[SessionManager] = None
     ):
         """Initialize Master Directive Processor with RAG and WebSearch"""
         self.db = db_service
         self.llm = llm_service
         self.stt = stt_service
         self.tts = tts_service
+        self.session_manager = session_manager
 
         # Initialize sub-services
         self.learning_service = ProfileLearningService(llm_service, db_service)
@@ -112,8 +115,22 @@ class MasterDirectiveProcessor:
             # 1. Load user profile
             profile = await self.db.get_or_create_profile(user_id)
 
-            # 2. Load recent conversations for context
-            recent_conversations = await self.db.get_recent_conversations(user_id, limit=10)
+            # 2. Get or create session and load conversation context
+            active_session = None
+            if self.session_manager and session_id:
+                # Try to get existing session
+                active_session = await self.session_manager.get_session(session_id)
+                if active_session and not active_session.is_expired():
+                    logger.info(f"Using active session {session_id} with {len(active_session.turns)} turns")
+                    # Build recent conversations from session turns
+                    recent_conversations = self._build_conversations_from_session(active_session)
+                else:
+                    # Session expired or not found, load from DB
+                    logger.info("Session expired or not found, loading from database")
+                    recent_conversations = await self.db.get_recent_conversations(user_id, limit=10)
+            else:
+                # No session manager or session_id, load from DB
+                recent_conversations = await self.db.get_recent_conversations(user_id, limit=10)
 
             # 3. RAG: Semantic search for similar past conversations
             rag_context_string = "No semantic memory retrieved."
@@ -259,7 +276,17 @@ class MasterDirectiveProcessor:
             # 8. Save conversation
             await self.db.save_conversation(conversation)
 
-            # 8.5. Embed conversation for RAG (semantic memory)
+            # 8.5. Add turn to session if active
+            if active_session:
+                await self.session_manager.add_turn(
+                    session_id=active_session.session_id,
+                    user_message=message,
+                    ai_response=ai_response,
+                    processing_time_ms=int((datetime.now() - start_time).total_seconds() * 1000)
+                )
+                logger.info(f"Added turn to session {active_session.session_id}")
+
+            # 8.6. Embed conversation for RAG (semantic memory)
             if self.rag_service:
                 try:
                     await self.rag_service.embed_and_store_conversation(conversation)
@@ -304,6 +331,40 @@ class MasterDirectiveProcessor:
         except Exception as e:
             logger.error(f"Error processing conversation: {e}")
             raise
+
+    def _build_conversations_from_session(self, session) -> List[Conversation]:
+        """
+        Convert session turns into Conversation objects for context
+
+        Args:
+            session: ConversationSession
+
+        Returns:
+            List of Conversation objects
+        """
+        conversations = []
+        for turn in session.turns:
+            conversation = Conversation(
+                conversation_id=f"session_{session.session_id}_{turn.timestamp.isoformat()}",
+                user_id=session.user_id,
+                session_id=session.session_id,
+                persona=session.persona.value,
+                messages=[
+                    ConversationMessage(
+                        role="user",
+                        content=turn.user_message,
+                        timestamp=turn.timestamp
+                    ),
+                    ConversationMessage(
+                        role="assistant",
+                        content=turn.ai_response,
+                        timestamp=turn.timestamp
+                    )
+                ],
+                processing_time_ms=turn.processing_time_ms
+            )
+            conversations.append(conversation)
+        return conversations
 
     def _detect_emotional_need(
         self,

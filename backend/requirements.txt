@@ -31,6 +31,7 @@ python-dotenv==1.0.1
 loguru==0.7.2
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+cachetools==5.3.2
 
 # Image Processing
 Pillow==10.2.0
