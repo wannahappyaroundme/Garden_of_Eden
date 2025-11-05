@@ -25,6 +25,95 @@ class CacheService {
   static const String _keyUserProfile = 'user_profile_';
   static const String _keyLastResponse = 'last_response';
   static const String _keyAppSettings = 'app_settings';
+  static const String _keyUserId = 'user_id';
+  static const String _keyOnboardingCompleted = 'onboarding_completed';
+  static const String _keyOnboardingSessionId = 'onboarding_session_id';
+
+  // ==================== User ID Management ====================
+
+  /// Save user ID to cache
+  Future<void> saveUserId(String userId) async {
+    try {
+      await _prefs?.setString(_keyUserId, userId);
+      _logger.info('Saved user ID to cache', data: {'userId': userId});
+    } catch (e) {
+      _logger.error('Failed to save user ID', error: e);
+    }
+  }
+
+  /// Load user ID from cache
+  Future<String?> loadUserId() async {
+    try {
+      final userId = _prefs?.getString(_keyUserId);
+      if (userId != null) {
+        _logger.debug('Loaded user ID from cache', data: {'userId': userId});
+      }
+      return userId;
+    } catch (e) {
+      _logger.error('Failed to load user ID', error: e);
+      return null;
+    }
+  }
+
+  /// Clear user ID
+  Future<void> clearUserId() async {
+    await _prefs?.remove(_keyUserId);
+    _logger.info('Cleared user ID from cache');
+  }
+
+  // ==================== Onboarding Status ====================
+
+  /// Mark onboarding as completed
+  Future<void> setOnboardingCompleted(bool completed) async {
+    try {
+      await _prefs?.setBool(_keyOnboardingCompleted, completed);
+      _logger.info('Set onboarding completed status', data: {'completed': completed});
+    } catch (e) {
+      _logger.error('Failed to set onboarding status', error: e);
+    }
+  }
+
+  /// Check if onboarding is completed
+  Future<bool> isOnboardingCompleted() async {
+    try {
+      final completed = _prefs?.getBool(_keyOnboardingCompleted) ?? false;
+      _logger.debug('Checked onboarding status', data: {'completed': completed});
+      return completed;
+    } catch (e) {
+      _logger.error('Failed to check onboarding status', error: e);
+      return false;
+    }
+  }
+
+  /// Save onboarding session ID (for resuming)
+  Future<void> saveOnboardingSessionId(String sessionId) async {
+    try {
+      await _prefs?.setString(_keyOnboardingSessionId, sessionId);
+      _logger.debug('Saved onboarding session ID', data: {'sessionId': sessionId});
+    } catch (e) {
+      _logger.error('Failed to save onboarding session ID', error: e);
+    }
+  }
+
+  /// Load onboarding session ID
+  Future<String?> loadOnboardingSessionId() async {
+    try {
+      final sessionId = _prefs?.getString(_keyOnboardingSessionId);
+      if (sessionId != null) {
+        _logger.debug('Loaded onboarding session ID', data: {'sessionId': sessionId});
+      }
+      return sessionId;
+    } catch (e) {
+      _logger.error('Failed to load onboarding session ID', error: e);
+      return null;
+    }
+  }
+
+  /// Clear onboarding session ID
+  Future<void> clearOnboardingSessionId() async {
+    await _prefs?.remove(_keyOnboardingSessionId);
+    _logger.debug('Cleared onboarding session ID');
+  }
 
   // ==================== User Profile ====================
 
