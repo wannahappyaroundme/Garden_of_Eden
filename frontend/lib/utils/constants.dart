@@ -25,7 +25,7 @@ class ApiConfig {
   static const String sttEndpoint = '/api/v2/stt';
 
   static const Duration connectionTimeout = Duration(seconds: 30);
-  static const Duration receiveTimeout = Duration(seconds: 30);
+  static const Duration receiveTimeout = Duration(seconds: 60);  // Increased for AI processing
 }
 
 /// Camera Configuration

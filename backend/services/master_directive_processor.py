@@ -267,16 +267,18 @@ class MasterDirectiveProcessor:
                 except Exception as e:
                     logger.warning(f"⚠️ Failed to embed conversation for RAG: {e}")
 
-            # 9. Learn from conversation (async - don't wait)
-            # In production, this would be a background task
-            logger.info("Starting learning pipeline...")
-            updated_profile = await self.learning_service.learn_from_conversation(
+            # 9. Learn from conversation (background task - don't wait for response)
+            # Fire and forget - learning happens in background
+            logger.info("Starting learning pipeline in background...")
+            import asyncio
+            asyncio.create_task(self.learning_service.learn_from_conversation(
                 user_id=user_id,
                 conversation=conversation
-            )
+            ))
 
-            profile_updated = updated_profile is not None
-            new_version = updated_profile.profile_version if updated_profile else profile.profile_version
+            # Don't wait for learning - respond immediately
+            profile_updated = False  # Will be updated in background
+            new_version = profile.profile_version
 
             # 10. Calculate processing time
             processing_time = (datetime.now() - start_time).total_seconds() * 1000  # ms

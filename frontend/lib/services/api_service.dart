@@ -164,7 +164,7 @@ class ApiService {
 
         // Extract transcription text from response
         final data = response.data as Map<String, dynamic>;
-        return data['transcription'] as String;
+        return data['text'] as String;
       },
       onRetry: onRetry,
     );
