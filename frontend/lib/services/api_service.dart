@@ -204,6 +204,140 @@ class ApiService {
     }
   }
 
+  // ========== Onboarding API Methods ==========
+
+  /// Start onboarding session
+  Future<OnboardingResponse> startOnboarding({
+    required String userId,
+    required PersonaType persona,
+    Function(int attempt, Exception error)? onRetry,
+  }) async {
+    return _retryableRequest<OnboardingResponse>(
+      request: () async {
+        final response = await _dio.post(
+          ApiConfig.onboardingStartEndpoint,
+          data: {
+            'user_id': userId,
+            'persona': persona.name,
+          },
+        );
+
+        return OnboardingResponse.fromJson(response.data as Map<String, dynamic>);
+      },
+      onRetry: onRetry,
+    );
+  }
+
+  /// Respond to onboarding question
+  Future<OnboardingResponse> respondToOnboarding({
+    required String sessionId,
+    required String userResponse,
+    Function(int attempt, Exception error)? onRetry,
+  }) async {
+    return _retryableRequest<OnboardingResponse>(
+      request: () async {
+        final response = await _dio.post(
+          ApiConfig.onboardingRespondEndpoint,
+          data: {
+            'session_id': sessionId,
+            'user_response': userResponse,
+          },
+        );
+
+        return OnboardingResponse.fromJson(response.data as Map<String, dynamic>);
+      },
+      onRetry: onRetry,
+    );
+  }
+
+  /// Get onboarding status
+  Future<Map<String, dynamic>> getOnboardingStatus(String sessionId) async {
+    return _retryableRequest<Map<String, dynamic>>(
+      request: () async {
+        final response = await _dio.get(
+          '${ApiConfig.onboardingStatusEndpoint}/$sessionId',
+        );
+
+        return response.data as Map<String, dynamic>;
+      },
+    );
+  }
+
+  // ========== Session API Methods ==========
+
+  /// Create new conversation session
+  Future<SessionInfo> createSession({
+    required String userId,
+    required PersonaType persona,
+    Function(int attempt, Exception error)? onRetry,
+  }) async {
+    return _retryableRequest<SessionInfo>(
+      request: () async {
+        final response = await _dio.post(
+          ApiConfig.sessionCreateEndpoint,
+          data: {
+            'user_id': userId,
+            'persona': persona.name,
+          },
+        );
+
+        return SessionInfo.fromJson(response.data as Map<String, dynamic>);
+      },
+      onRetry: onRetry,
+    );
+  }
+
+  /// Get session information by session ID
+  Future<SessionInfo> getSessionInfo(String sessionId) async {
+    return _retryableRequest<SessionInfo>(
+      request: () async {
+        final response = await _dio.get(
+          '${ApiConfig.sessionInfoEndpoint}/$sessionId',
+        );
+
+        return SessionInfo.fromJson(response.data as Map<String, dynamic>);
+      },
+    );
+  }
+
+  /// Get user's active session (if any)
+  Future<SessionInfo?> getUserActiveSession(String userId) async {
+    return _retryableRequest<SessionInfo?>(
+      request: () async {
+        try {
+          final response = await _dio.get(
+            '${ApiConfig.sessionUserEndpoint}/$userId',
+          );
+
+          return SessionInfo.fromJson(response.data as Map<String, dynamic>);
+        } on DioException catch (e) {
+          // Return null if no active session (404)
+          if (e.response?.statusCode == 404) {
+            return null;
+          }
+          rethrow;
+        }
+      },
+    );
+  }
+
+  /// Close an active session
+  Future<void> closeSession({
+    required String sessionId,
+    String reason = 'User closed session',
+  }) async {
+    try {
+      await _dio.post(
+        '${ApiConfig.sessionCloseEndpoint}/$sessionId/close',
+        data: {
+          'reason': reason,
+        },
+      );
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
   /// Handle Dio errors
   ApiException _handleDioError(DioException e) {
     switch (e.type) {

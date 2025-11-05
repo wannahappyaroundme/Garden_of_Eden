@@ -24,6 +24,17 @@ class ApiConfig {
   static const String profileEndpoint = '/api/v2/profile';
   static const String sttEndpoint = '/api/v2/stt';
 
+  // Onboarding endpoints
+  static const String onboardingStartEndpoint = '/api/v2/onboarding/start';
+  static const String onboardingRespondEndpoint = '/api/v2/onboarding/respond';
+  static const String onboardingStatusEndpoint = '/api/v2/onboarding/status';
+
+  // Session endpoints
+  static const String sessionCreateEndpoint = '/api/v2/session/create';
+  static const String sessionInfoEndpoint = '/api/v2/session';
+  static const String sessionUserEndpoint = '/api/v2/session/user';
+  static const String sessionCloseEndpoint = '/api/v2/session';
+
   static const Duration connectionTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 60);  // Increased for AI processing
 }
