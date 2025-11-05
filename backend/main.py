@@ -25,6 +25,7 @@ from services.tts_service import TTSService
 from services.master_directive_processor import MasterDirectiveProcessor
 from services.onboarding_service import OnboardingService
 from services.session_manager import SessionManager
+from services.goal_progress_service import GoalProgressService
 from models.api_schemas import (
     ChatResponse,
     ProfileResponse,
@@ -52,13 +53,14 @@ tts_service: Optional[TTSService] = None
 master_processor: Optional[MasterDirectiveProcessor] = None
 onboarding_service: Optional[OnboardingService] = None
 session_manager: Optional[SessionManager] = None
+goal_progress_service: Optional[GoalProgressService] = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup/shutdown"""
     # Startup
-    global db_service, llm_service, stt_service, tts_service, master_processor, onboarding_service, session_manager
+    global db_service, llm_service, stt_service, tts_service, master_processor, onboarding_service, session_manager, goal_progress_service
 
     logger.info("Starting Project Eden V2 Backend...")
 
@@ -86,13 +88,20 @@ async def lifespan(app: FastAPI):
         )
         session_manager = SessionManager()
 
+        # Initialize goal progress service
+        goal_progress_service = GoalProgressService(
+            db_service=db_service,
+            gemini_service=llm_service
+        )
+
         # Initialize master processor with session manager
         master_processor = MasterDirectiveProcessor(
             db_service=db_service,
             llm_service=llm_service,
             stt_service=stt_service,
             tts_service=tts_service,
-            session_manager=session_manager
+            session_manager=session_manager,
+            goal_progress_service=goal_progress_service
         )
 
         logger.info("✅ All services initialized successfully")
@@ -153,6 +162,13 @@ def get_session_manager() -> SessionManager:
     if session_manager is None:
         raise HTTPException(status_code=500, detail="Session manager not initialized")
     return session_manager
+
+
+def get_goal_progress_service() -> GoalProgressService:
+    """Dependency to get goal progress service"""
+    if goal_progress_service is None:
+        raise HTTPException(status_code=500, detail="Goal progress service not initialized")
+    return goal_progress_service
 
 
 # ==================== API Endpoints ====================
@@ -635,6 +651,361 @@ async def get_session_stats(
 
     except Exception as e:
         logger.error(f"Error getting session stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ==================== Goal Progress Endpoints ====================
+
+@app.post("/api/v2/goals/create", tags=["Goals"])
+async def create_goal(
+    user_id: str = Form(...),
+    target_date: Optional[str] = Form(None),
+    description: Optional[str] = Form(None),
+    db: DynamoDBService = Depends(get_db_service),
+    goal_service: GoalProgressService = Depends(get_goal_progress_service)
+):
+    """
+    Create a goal tracker from user's One Thing
+
+    Args:
+        user_id: User ID
+        target_date: Optional target completion date (ISO format: YYYY-MM-DD)
+        description: Optional detailed description
+
+    Returns:
+        Goal tracker information
+    """
+    try:
+        # Get user profile
+        profile = await db.get_user_profile(user_id)
+
+        if not profile:
+            raise HTTPException(status_code=404, detail=f"Profile not found for user {user_id}")
+
+        if not profile.one_thing or not profile.one_thing.value:
+            raise HTTPException(status_code=400, detail="User has not set their One Thing yet")
+
+        # Parse target date if provided
+        target = None
+        if target_date:
+            try:
+                from datetime import date as date_cls
+                target = date_cls.fromisoformat(target_date)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+
+        # Create goal tracker
+        tracker = await goal_service.create_goal_from_one_thing(
+            user_profile=profile,
+            target_date=target,
+            description=description
+        )
+
+        if not tracker:
+            raise HTTPException(status_code=500, detail="Failed to create goal tracker")
+
+        return {
+            "goal_id": tracker.goal_id,
+            "one_thing": tracker.one_thing,
+            "description": tracker.description,
+            "start_date": tracker.start_date.isoformat(),
+            "target_date": tracker.target_date.isoformat() if tracker.target_date else None,
+            "milestones_count": len(tracker.milestones),
+            "created": True
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating goal: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v2/goals/{user_id}", tags=["Goals"])
+async def get_goal_summary(
+    user_id: str,
+    goal_service: GoalProgressService = Depends(get_goal_progress_service)
+):
+    """Get comprehensive goal summary with insights"""
+    try:
+        summary = await goal_service.get_goal_summary(user_id)
+
+        if not summary:
+            raise HTTPException(status_code=404, detail=f"No goal found for user {user_id}")
+
+        return summary
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting goal summary: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v2/goals/{user_id}/progress", tags=["Goals"])
+async def record_progress(
+    user_id: str,
+    reflection: Optional[str] = Form(None),
+    mood_rating: Optional[int] = Form(None),
+    metrics: Optional[str] = Form(None),  # JSON string of metrics
+    photo_url: Optional[str] = Form(None),
+    goal_service: GoalProgressService = Depends(get_goal_progress_service)
+):
+    """
+    Record daily/weekly progress snapshot
+
+    Args:
+        user_id: User ID
+        reflection: User's reflection on progress
+        mood_rating: Mood rating 1-5
+        metrics: JSON array of metrics [{"name": "Study Hours", "value": 2.5, "unit": "hours"}]
+        photo_url: Optional URL to progress photo
+
+    Returns:
+        Success status
+    """
+    try:
+        # Parse metrics if provided
+        from models.goal_progress import GoalMetric, MoodRating
+        import json
+
+        metric_objects = []
+        if metrics:
+            try:
+                metrics_data = json.loads(metrics)
+                for m in metrics_data:
+                    metric_objects.append(GoalMetric(
+                        name=m["name"],
+                        value=float(m["value"]),
+                        unit=m["unit"],
+                        metric_type=m.get("metric_type", "count")
+                    ))
+            except (json.JSONDecodeError, KeyError) as e:
+                raise HTTPException(status_code=400, detail=f"Invalid metrics format: {e}")
+
+        # Validate mood rating
+        mood = None
+        if mood_rating is not None:
+            if mood_rating not in [1, 2, 3, 4, 5]:
+                raise HTTPException(status_code=400, detail="Mood rating must be 1-5")
+            mood = MoodRating(mood_rating)
+
+        # Record progress
+        success = await goal_service.record_progress(
+            user_id=user_id,
+            metrics=metric_objects if metric_objects else None,
+            reflection=reflection,
+            mood_rating=mood,
+            photo_url=photo_url
+        )
+
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to record progress")
+
+        return {
+            "success": True,
+            "message": "Progress recorded successfully",
+            "recorded_at": datetime.now().isoformat()
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error recording progress: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v2/goals/{user_id}/milestones", tags=["Goals"])
+async def add_milestone(
+    user_id: str,
+    description: str = Form(...),
+    target_date: Optional[str] = Form(None),
+    reward: Optional[str] = Form(None),
+    goal_service: GoalProgressService = Depends(get_goal_progress_service)
+):
+    """Add a custom milestone to the goal"""
+    try:
+        # Parse target date if provided
+        target = None
+        if target_date:
+            try:
+                from datetime import date as date_cls
+                target = date_cls.fromisoformat(target_date)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+
+        success = await goal_service.add_custom_milestone(
+            user_id=user_id,
+            description=description,
+            target_date=target,
+            reward=reward
+        )
+
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to add milestone")
+
+        return {
+            "success": True,
+            "message": "Milestone added successfully"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error adding milestone: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.patch("/api/v2/goals/{user_id}/milestones/{milestone_id}", tags=["Goals"])
+async def update_milestone_status(
+    user_id: str,
+    milestone_id: str,
+    is_completed: bool = Form(...),
+    goal_service: GoalProgressService = Depends(get_goal_progress_service)
+):
+    """Mark milestone as completed or uncompleted"""
+    try:
+        success = await goal_service.db.update_milestone(
+            user_id=user_id,
+            milestone_id=milestone_id,
+            is_completed=is_completed
+        )
+
+        if not success:
+            raise HTTPException(status_code=404, detail="Milestone not found or update failed")
+
+        return {
+            "success": True,
+            "milestone_id": milestone_id,
+            "is_completed": is_completed
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating milestone: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v2/goals/{user_id}/setup-metrics", tags=["Goals"])
+async def setup_tracked_metrics(
+    user_id: str,
+    metrics_config: str = Form(...),  # JSON: {"metrics": ["Study Hours", "Pages Read"], "units": {"Study Hours": "hours", "Pages Read": "pages"}}
+    goal_service: GoalProgressService = Depends(get_goal_progress_service)
+):
+    """Configure which metrics to track for the goal"""
+    try:
+        import json
+
+        try:
+            config = json.loads(metrics_config)
+            metric_names = config["metrics"]
+            metric_units = config["units"]
+        except (json.JSONDecodeError, KeyError) as e:
+            raise HTTPException(status_code=400, detail=f"Invalid metrics config format: {e}")
+
+        success = await goal_service.setup_tracked_metrics(
+            user_id=user_id,
+            metric_names=metric_names,
+            metric_units=metric_units
+        )
+
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to setup metrics")
+
+        return {
+            "success": True,
+            "tracked_metrics": metric_names,
+            "message": "Metrics configured successfully"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error setting up metrics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v2/goals/{user_id}/history", tags=["Goals"])
+async def get_progress_history(
+    user_id: str,
+    days: int = 30,
+    db: DynamoDBService = Depends(get_db_service)
+):
+    """Get progress history for last N days"""
+    try:
+        snapshots = await db.get_progress_history(user_id=user_id, days=days)
+
+        return {
+            "user_id": user_id,
+            "days": days,
+            "total_snapshots": len(snapshots),
+            "snapshots": [
+                {
+                    "snapshot_id": s.snapshot_id,
+                    "date": s.date.isoformat(),
+                    "reflection": s.reflection,
+                    "mood_rating": s.mood_rating,
+                    "metrics": [
+                        {
+                            "name": m.name,
+                            "value": m.value,
+                            "unit": m.unit,
+                            "metric_type": m.metric_type
+                        }
+                        for m in s.metrics
+                    ],
+                    "photo_url": s.photo_url,
+                    "created_at": s.created_at.isoformat()
+                }
+                for s in sorted(snapshots, key=lambda x: x.date, reverse=True)
+            ]
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting progress history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v2/goals/{user_id}/insights", tags=["Goals"])
+async def generate_insights(
+    user_id: str,
+    db: DynamoDBService = Depends(get_db_service),
+    goal_service: GoalProgressService = Depends(get_goal_progress_service)
+):
+    """Generate AI-powered insights about user's progress"""
+    try:
+        tracker = await db.get_goal_progress(user_id)
+
+        if not tracker:
+            raise HTTPException(status_code=404, detail=f"No goal found for user {user_id}")
+
+        # Get user profile for context
+        profile = await db.get_user_profile(user_id)
+
+        # Generate insights
+        insights = await goal_service.generate_progress_insights(tracker, profile)
+
+        return {
+            "user_id": user_id,
+            "total_insights": len(insights),
+            "insights": [
+                {
+                    "type": i.insight_type,
+                    "title": i.title,
+                    "description": i.description,
+                    "actionable": i.actionable,
+                    "priority": i.priority,
+                    "generated_at": i.generated_at.isoformat()
+                }
+                for i in sorted(insights, key=lambda x: x.priority, reverse=True)
+            ]
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating insights: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

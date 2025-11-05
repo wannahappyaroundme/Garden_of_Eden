@@ -21,6 +21,7 @@ from services.pitfall_detection_service import PitfallDetectionService
 from services.retrieval_augmented_generation_service import RAGService
 from services.web_search_service import WebSearchService
 from services.session_manager import SessionManager
+from services.goal_progress_service import GoalProgressService
 from utils.logger import get_logger
 from utils.constants import PersonaType, LearningEventType
 
@@ -39,14 +40,16 @@ class MasterDirectiveProcessor:
         llm_service: GeminiService,
         stt_service: STTService,
         tts_service: TTSService,
-        session_manager: Optional[SessionManager] = None
+        session_manager: Optional[SessionManager] = None,
+        goal_progress_service: Optional[GoalProgressService] = None
     ):
-        """Initialize Master Directive Processor with RAG and WebSearch"""
+        """Initialize Master Directive Processor with RAG, WebSearch, and Goal Tracking"""
         self.db = db_service
         self.llm = llm_service
         self.stt = stt_service
         self.tts = tts_service
         self.session_manager = session_manager
+        self.goal_service = goal_progress_service
 
         # Initialize sub-services
         self.learning_service = ProfileLearningService(llm_service, db_service)
@@ -225,6 +228,13 @@ class MasterDirectiveProcessor:
                 # Track emotional support session
                 profile.meta_learning.emotional_support_sessions += 1
 
+            # 6. Check goal progress and generate context
+            goal_context_string = "No goal tracking info available."
+            goal_progress_context = await self._check_goal_progress_context(user_id, profile)
+            if goal_progress_context:
+                goal_context_string = goal_progress_context
+                logger.info("🎯 Goal progress context added to conversation")
+
             # 7. Generate AI response using Master Directive with full context
             ai_response = await self.llm.generate_response(
                 user_message=message,
@@ -237,7 +247,8 @@ class MasterDirectiveProcessor:
                 emotional_support_mode=emotional_support_mode,
                 emotional_details=emotional_details,
                 rag_context=rag_context_string,
-                web_context=web_context_string
+                web_context=web_context_string,
+                goal_context=goal_context_string
             )
 
             # 6. Generate TTS audio
@@ -413,3 +424,101 @@ class MasterDirectiveProcessor:
                 }
 
         return False, None
+
+    async def _check_goal_progress_context(self, user_id: str, profile: UserProfile) -> Optional[str]:
+        """
+        Check goal progress and generate context for AI if relevant
+
+        Returns context string with goal progress info and reminders
+        """
+        if not self.goal_service:
+            return None
+
+        try:
+            # Get goal tracker
+            tracker = await self.db.get_goal_progress(user_id)
+
+            if not tracker:
+                # No goal set yet, suggest creating one if they have a One Thing
+                if profile.one_thing and profile.one_thing.value:
+                    return f"💡 Goal Context: User has a 'One Thing' ({profile.one_thing.value}) but hasn't created a goal tracker yet. Consider gently suggesting they track their progress."
+                return None
+
+            # Get stagnation alert
+            stagnation_insight = await self.goal_service.detect_stagnation(user_id)
+
+            # Build context
+            context_parts = []
+
+            # Basic progress info
+            completion = tracker.get_completion_percentage()
+            days_active = tracker.days_since_start()
+            context_parts.append(f"🎯 Goal Progress: {tracker.one_thing}")
+            context_parts.append(f"   - {completion:.1f}% complete")
+            context_parts.append(f"   - {days_active} days active")
+
+            # Days remaining
+            days_remaining = tracker.days_until_target()
+            if days_remaining is not None:
+                if days_remaining < 0:
+                    context_parts.append(f"   - ⚠️ {-days_remaining} days overdue!")
+                elif days_remaining <= 7:
+                    context_parts.append(f"   - ⏰ Only {days_remaining} days remaining!")
+                else:
+                    context_parts.append(f"   - {days_remaining} days remaining")
+
+            # Trend info
+            if tracker.current_trend:
+                trend = tracker.current_trend
+                context_parts.append(f"   - Trend: {trend.direction.upper()}")
+                context_parts.append(f"   - Current streak: {trend.current_streak} days")
+
+                if trend.current_streak == 0:
+                    context_parts.append("   - ⚠️ Streak broken! Encourage them to restart.")
+                elif trend.current_streak >= 7:
+                    context_parts.append("   - 🔥 Great consistency! Celebrate this!")
+
+            # Stagnation warning
+            if stagnation_insight:
+                context_parts.append(f"   - 🚨 {stagnation_insight.title}: {stagnation_insight.description}")
+
+            # Upcoming milestones
+            upcoming = tracker.upcomingMilestones()
+            if upcoming:
+                next_milestone = upcoming[0]
+                context_parts.append(f"   - Next milestone: {next_milestone.description}")
+                days_until = next_milestone.days_until_target()
+                if days_until is not None and days_until <= 3:
+                    context_parts.append(f"     ⏰ Due in {days_until} days!")
+
+            # Recent snapshot
+            recent = tracker.most_recent_snapshot()
+            if recent:
+                days_since = (datetime.now().date() - recent.date).days
+                if days_since == 0:
+                    context_parts.append("   - ✅ Logged progress today!")
+                elif days_since == 1:
+                    context_parts.append("   - Last logged: yesterday")
+                else:
+                    context_parts.append(f"   - Last logged: {days_since} days ago")
+            else:
+                context_parts.append("   - ℹ️ No progress entries yet. Encourage first entry!")
+
+            # Proactive suggestions
+            context_parts.append("\n📌 Proactive Goal Support:")
+
+            if stagnation_insight:
+                context_parts.append("   - Gently ask about their goal and offer to help record progress")
+            elif days_active % 7 == 0 and days_active > 0:
+                context_parts.append("   - It's been a week! Good time to reflect on progress")
+
+            if tracker.current_trend and tracker.current_trend.direction == "declining":
+                context_parts.append("   - Progress declining. Offer encouragement and help identify blockers")
+            elif tracker.current_trend and tracker.current_trend.direction == "improving":
+                context_parts.append("   - Progress improving! Celebrate wins and reinforce momentum")
+
+            return "\n".join(context_parts)
+
+        except Exception as e:
+            logger.error(f"Error checking goal progress context: {e}")
+            return None

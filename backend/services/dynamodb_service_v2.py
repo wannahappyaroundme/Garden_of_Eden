@@ -14,6 +14,7 @@ from botocore.exceptions import ClientError
 
 from models.user_profile import UserProfile, PersonalityTrait, OneThing, CoreElement, CorePitfall
 from models.conversation import Conversation, LearningEvent
+from models.goal_progress import GoalProgressTracker, ProgressSnapshot, Milestone
 from utils.logger import get_logger
 from utils.constants import get_profile_maturity
 
@@ -58,13 +59,15 @@ class DynamoDBService:
         region_name: str = "us-east-1",
         profiles_table_name: str = "eden_user_profiles_v2",
         conversations_table_name: str = "eden_conversations_raw",
-        learning_events_table_name: str = "eden_learning_events"
+        learning_events_table_name: str = "eden_learning_events",
+        goal_progress_table_name: str = "eden_goal_progress"
     ):
         self.dynamodb = boto3.resource('dynamodb', region_name=region_name)
 
         self.profiles_table = self.dynamodb.Table(profiles_table_name)
         self.conversations_table = self.dynamodb.Table(conversations_table_name)
         self.learning_events_table = self.dynamodb.Table(learning_events_table_name)
+        self.goal_progress_table = self.dynamodb.Table(goal_progress_table_name)
 
         logger.info(f"DynamoDB service initialized for region: {region_name}")
 
@@ -253,6 +256,118 @@ class DynamoDBService:
             logger.error(f"Error retrieving learning events for {user_id}: {e}")
             return []
 
+    # ==================== Goal Progress Operations ====================
+
+    async def save_goal_progress(self, tracker: GoalProgressTracker) -> bool:
+        """Save or update goal progress tracker"""
+        try:
+            item = python_to_dynamodb(tracker.to_dict())
+            self.goal_progress_table.put_item(Item=item)
+            logger.info(f"Saved goal progress for user {tracker.user_id}, goal {tracker.goal_id}")
+            return True
+
+        except ClientError as e:
+            logger.error(f"Error saving goal progress for {tracker.user_id}: {e}")
+            return False
+
+    async def get_goal_progress(self, user_id: str) -> Optional[GoalProgressTracker]:
+        """Get goal progress tracker by user_id"""
+        try:
+            response = self.goal_progress_table.get_item(Key={'user_id': user_id})
+
+            if 'Item' not in response:
+                logger.info(f"Goal progress not found for user: {user_id}")
+                return None
+
+            # Convert DynamoDB item to GoalProgressTracker
+            item = dynamodb_to_python(response['Item'])
+            tracker = GoalProgressTracker.from_dict(item)
+
+            logger.info(f"Retrieved goal progress for user {user_id}")
+            return tracker
+
+        except ClientError as e:
+            logger.error(f"Error retrieving goal progress for {user_id}: {e}")
+            return None
+
+    async def add_progress_snapshot(
+        self,
+        user_id: str,
+        snapshot: ProgressSnapshot
+    ) -> bool:
+        """Add a progress snapshot to user's goal tracker"""
+        try:
+            # Get existing tracker
+            tracker = await self.get_goal_progress(user_id)
+            if not tracker:
+                logger.warning(f"Cannot add snapshot - no goal tracker found for {user_id}")
+                return False
+
+            # Add snapshot
+            tracker.add_snapshot(snapshot)
+
+            # Save updated tracker
+            return await self.save_goal_progress(tracker)
+
+        except Exception as e:
+            logger.error(f"Error adding progress snapshot for {user_id}: {e}")
+            return False
+
+    async def update_milestone(
+        self,
+        user_id: str,
+        milestone_id: str,
+        is_completed: bool
+    ) -> bool:
+        """Update milestone completion status"""
+        try:
+            # Get existing tracker
+            tracker = await self.get_goal_progress(user_id)
+            if not tracker:
+                logger.warning(f"Cannot update milestone - no goal tracker found for {user_id}")
+                return False
+
+            # Update milestone
+            if is_completed:
+                success = tracker.complete_milestone(milestone_id)
+            else:
+                # Uncomplete milestone
+                milestone = tracker.get_milestone(milestone_id)
+                if milestone:
+                    milestone.is_completed = False
+                    milestone.completed_date = None
+                    success = True
+                else:
+                    success = False
+
+            if not success:
+                logger.warning(f"Milestone {milestone_id} not found for user {user_id}")
+                return False
+
+            # Save updated tracker
+            return await self.save_goal_progress(tracker)
+
+        except Exception as e:
+            logger.error(f"Error updating milestone for {user_id}: {e}")
+            return False
+
+    async def get_progress_history(
+        self,
+        user_id: str,
+        days: int = 30
+    ) -> List[ProgressSnapshot]:
+        """Get progress snapshots from last N days"""
+        try:
+            tracker = await self.get_goal_progress(user_id)
+            if not tracker:
+                return []
+
+            return tracker.get_recent_snapshots(days)
+
+        except Exception as e:
+            logger.error(f"Error retrieving progress history for {user_id}: {e}")
+            return []
+
     # ==================== Helper Methods ====================
 
     def format_profile_summary(self, profile: UserProfile) -> dict:
@@ -375,6 +490,27 @@ def create_tables():
     except ClientError as e:
         if e.response['Error']['Code'] == 'ResourceInUseException':
             print("Learning events table already exists")
+        else:
+            raise
+
+    # Create Goal Progress Table
+    try:
+        goal_progress_table = dynamodb.create_table(
+            TableName='eden_goal_progress',
+            KeySchema=[
+                {'AttributeName': 'user_id', 'KeyType': 'HASH'}
+            ],
+            AttributeDefinitions=[
+                {'AttributeName': 'user_id', 'AttributeType': 'S'}
+            ],
+            BillingMode='PAY_PER_REQUEST'
+        )
+        print("Creating goal progress table...")
+        goal_progress_table.wait_until_exists()
+        print("Goal progress table created!")
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'ResourceInUseException':
+            print("Goal progress table already exists")
         else:
             raise
 

@@ -63,10 +63,11 @@ class GeminiService:
         emotional_support_mode: bool = False,
         emotional_details: Optional[dict] = None,
         rag_context: str = "No semantic memory retrieved.",
-        web_context: str = "No web search performed."
+        web_context: str = "No web search performed.",
+        goal_context: str = "No goal tracking info available."
     ) -> str:
         """
-        Generate AI response using Master Directive system with RAG and WebSearch
+        Generate AI response using Master Directive system with RAG, WebSearch, and Goal Tracking
 
         Args:
             user_message: User's input text
@@ -80,6 +81,7 @@ class GeminiService:
             emotional_details: Details about emotional state
             rag_context: Semantic memory from RAG search
             web_context: Current web information from search
+            goal_context: Goal progress tracking information
 
         Returns:
             AI response text in Korean
@@ -128,11 +130,11 @@ class GeminiService:
                     persona_name=persona_name
                 )
 
-            # Build complete Master Directive prompt with RAG and WebSearch
+            # Build complete Master Directive prompt with RAG, WebSearch, and Goal Tracking
             master_directive = build_master_directive(
                 user_message=user_message,
                 user_profile_context=profile_context,
-                learning_preferences_context=learning_preferences_context,  # NEW
+                learning_preferences_context=learning_preferences_context,
                 persona_name=persona_name,
                 recent_memory=recent_memory,
                 visual_context=visual_context,
@@ -142,7 +144,8 @@ class GeminiService:
                 detected_topic=detected_topic,
                 mode_specific_instructions=mode_instructions,
                 rag_context=rag_context,
-                web_context=web_context
+                web_context=web_context,
+                goal_context=goal_context
             )
 
             # Prepare content for Gemini

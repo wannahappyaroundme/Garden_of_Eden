@@ -2,8 +2,10 @@
 library;
 
 import 'dart:io';
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import '../models/chat_models.dart';
+import '../models/goal_models.dart';
 import '../utils/constants.dart';
 
 class ApiService {
@@ -336,6 +338,192 @@ class ApiService {
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
+  }
+
+  // ========== Goal Progress API Methods ==========
+
+  /// Create a new goal from user's One Thing
+  Future<CreateGoalResponse> createGoal({
+    required String userId,
+    String? targetDate,
+    String? description,
+    Function(int attempt, Exception error)? onRetry,
+  }) async {
+    return _retryableRequest<CreateGoalResponse>(
+      request: () async {
+        final formData = FormData.fromMap({
+          'user_id': userId,
+          if (targetDate != null) 'target_date': targetDate,
+          if (description != null) 'description': description,
+        });
+
+        final response = await _dio.post(
+          ApiConfig.goalsCreateEndpoint,
+          data: formData,
+        );
+
+        return CreateGoalResponse.fromJson(response.data as Map<String, dynamic>);
+      },
+      onRetry: onRetry,
+    );
+  }
+
+  /// Get comprehensive goal summary with insights
+  Future<GoalSummary> getGoalSummary(String userId) async {
+    return _retryableRequest<GoalSummary>(
+      request: () async {
+        final response = await _dio.get('${ApiConfig.goalsEndpoint}/$userId');
+        return GoalSummary.fromJson(response.data as Map<String, dynamic>);
+      },
+    );
+  }
+
+  /// Record progress snapshot
+  Future<RecordProgressResponse> recordProgress({
+    required String userId,
+    String? reflection,
+    int? moodRating,
+    List<Map<String, dynamic>>? metrics,
+    String? photoUrl,
+    Function(int attempt, Exception error)? onRetry,
+  }) async {
+    return _retryableRequest<RecordProgressResponse>(
+      request: () async {
+        final formData = FormData.fromMap({
+          if (reflection != null) 'reflection': reflection,
+          if (moodRating != null) 'mood_rating': moodRating,
+          if (metrics != null) 'metrics': jsonEncode(metrics),
+          if (photoUrl != null) 'photo_url': photoUrl,
+        });
+
+        final response = await _dio.post(
+          '${ApiConfig.goalsEndpoint}/$userId/progress',
+          data: formData,
+        );
+
+        return RecordProgressResponse.fromJson(response.data as Map<String, dynamic>);
+      },
+      onRetry: onRetry,
+    );
+  }
+
+  /// Add a custom milestone
+  Future<Map<String, dynamic>> addMilestone({
+    required String userId,
+    required String description,
+    String? targetDate,
+    String? reward,
+    Function(int attempt, Exception error)? onRetry,
+  }) async {
+    return _retryableRequest<Map<String, dynamic>>(
+      request: () async {
+        final formData = FormData.fromMap({
+          'description': description,
+          if (targetDate != null) 'target_date': targetDate,
+          if (reward != null) 'reward': reward,
+        });
+
+        final response = await _dio.post(
+          '${ApiConfig.goalsEndpoint}/$userId/milestones',
+          data: formData,
+        );
+
+        return response.data as Map<String, dynamic>;
+      },
+      onRetry: onRetry,
+    );
+  }
+
+  /// Update milestone completion status
+  Future<Map<String, dynamic>> updateMilestoneStatus({
+    required String userId,
+    required String milestoneId,
+    required bool isCompleted,
+    Function(int attempt, Exception error)? onRetry,
+  }) async {
+    return _retryableRequest<Map<String, dynamic>>(
+      request: () async {
+        final formData = FormData.fromMap({
+          'is_completed': isCompleted,
+        });
+
+        final response = await _dio.patch(
+          '${ApiConfig.goalsEndpoint}/$userId/milestones/$milestoneId',
+          data: formData,
+        );
+
+        return response.data as Map<String, dynamic>;
+      },
+      onRetry: onRetry,
+    );
+  }
+
+  /// Configure tracked metrics for the goal
+  Future<Map<String, dynamic>> setupTrackedMetrics({
+    required String userId,
+    required List<String> metricNames,
+    required Map<String, String> metricUnits,
+    Function(int attempt, Exception error)? onRetry,
+  }) async {
+    return _retryableRequest<Map<String, dynamic>>(
+      request: () async {
+        final config = {
+          'metrics': metricNames,
+          'units': metricUnits,
+        };
+
+        final formData = FormData.fromMap({
+          'metrics_config': jsonEncode(config),
+        });
+
+        final response = await _dio.post(
+          '${ApiConfig.goalsEndpoint}/$userId/setup-metrics',
+          data: formData,
+        );
+
+        return response.data as Map<String, dynamic>;
+      },
+      onRetry: onRetry,
+    );
+  }
+
+  /// Get progress history for last N days
+  Future<ProgressHistoryResponse> getProgressHistory({
+    required String userId,
+    int days = 30,
+  }) async {
+    return _retryableRequest<ProgressHistoryResponse>(
+      request: () async {
+        final response = await _dio.get(
+          '${ApiConfig.goalsEndpoint}/$userId/history',
+          queryParameters: {'days': days},
+        );
+
+        return ProgressHistoryResponse.fromJson(response.data as Map<String, dynamic>);
+      },
+    );
+  }
+
+  /// Generate AI-powered insights about progress
+  Future<List<GoalInsight>> generateInsights({
+    required String userId,
+    Function(int attempt, Exception error)? onRetry,
+  }) async {
+    return _retryableRequest<List<GoalInsight>>(
+      request: () async {
+        final response = await _dio.post(
+          '${ApiConfig.goalsEndpoint}/$userId/insights',
+        );
+
+        final data = response.data as Map<String, dynamic>;
+        final insightsData = data['insights'] as List<dynamic>;
+
+        return insightsData
+            .map((i) => GoalInsight.fromJson(i as Map<String, dynamic>))
+            .toList();
+      },
+      onRetry: onRetry,
+    );
   }
 
   /// Handle Dio errors

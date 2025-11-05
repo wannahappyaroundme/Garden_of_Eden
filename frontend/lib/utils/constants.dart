@@ -35,6 +35,10 @@ class ApiConfig {
   static const String sessionUserEndpoint = '/api/v2/session/user';
   static const String sessionCloseEndpoint = '/api/v2/session';
 
+  // Goal progress endpoints
+  static const String goalsCreateEndpoint = '/api/v2/goals/create';
+  static const String goalsEndpoint = '/api/v2/goals';
+
   static const Duration connectionTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 60);  // Increased for AI processing
 }
