@@ -19,7 +19,7 @@ from models.goal_progress import (
     MetricType
 )
 from services.dynamodb_service_v2 import DynamoDBService
-from services.gemini_service import GeminiService
+from services.llm_gemini_v2 import GeminiService
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
