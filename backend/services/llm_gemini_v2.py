@@ -280,7 +280,18 @@ class GeminiService:
                 }
             )
 
-            text = response.text.strip()
+            # Handle both simple and multi-part responses
+            try:
+                text = response.text.strip()
+            except ValueError:
+                # If response.text fails, extract from parts
+                text_parts = []
+                for candidate in response.candidates:
+                    for part in candidate.content.parts:
+                        if hasattr(part, 'text'):
+                            text_parts.append(part.text)
+                text = "".join(text_parts).strip()
+
             logger.debug(f"Generated text-only response: {text[:100]}...")
             return text
 
