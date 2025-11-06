@@ -129,7 +129,7 @@ class CameraFrame {
 /// Onboarding Response from backend
 /// Used for Socratic dialogue onboarding flow
 class OnboardingResponse {
-  final String sessionId;
+  final String? sessionId;
   final String? question;
   final int? step;
   final int? totalSteps;
@@ -138,7 +138,7 @@ class OnboardingResponse {
   final OnboardingResult? result;
 
   OnboardingResponse({
-    required this.sessionId,
+    this.sessionId,
     this.question,
     this.step,
     this.totalSteps,
@@ -148,9 +148,20 @@ class OnboardingResponse {
   });
 
   factory OnboardingResponse.fromJson(Map<String, dynamic> json) {
+    // Handle both 'next_question' and 'question' fields
+    String? questionText = json['question'] as String?;
+    if (questionText == null || questionText.isEmpty) {
+      questionText = json['next_question'] as String?;
+    }
+
+    // Make sure empty strings become null
+    if (questionText != null && questionText.isEmpty) {
+      questionText = null;
+    }
+
     return OnboardingResponse(
-      sessionId: json['session_id'] as String,
-      question: json['question'] as String?,
+      sessionId: json['session_id'] as String?,
+      question: questionText,
       step: json['step'] as int?,
       totalSteps: json['total_steps'] as int?,
       completed: json['completed'] as bool? ?? false,

@@ -102,15 +102,20 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
         persona: persona,
       );
 
+      // Validate response
+      if (response.sessionId == null || response.sessionId!.isEmpty) {
+        throw Exception('세션 ID를 받지 못했습니다');
+      }
+
       // Save session ID for resuming
-      await _cacheService.saveOnboardingSessionId(response.sessionId);
+      await _cacheService.saveOnboardingSessionId(response.sessionId!);
 
       state = state.copyWith(
         sessionId: response.sessionId,
         userId: userId,
         currentStep: response.step ?? 1,
         totalSteps: response.totalSteps ?? 6,
-        currentQuestion: response.question,
+        currentQuestion: response.question ?? '질문을 불러오는 중...',
         isLoading: false,
         persona: persona,
       );
@@ -124,7 +129,7 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
 
   /// Respond to onboarding question
   Future<void> respondToQuestion(String userResponse) async {
-    if (state.sessionId == null) {
+    if (state.sessionId == null || state.sessionId!.isEmpty) {
       state = state.copyWith(errorMessage: '세션 ID가 없습니다');
       return;
     }
@@ -146,13 +151,24 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
           isCompleted: true,
           isLoading: false,
           result: response.result,
-          currentQuestion: response.message,
+          currentQuestion: response.message ?? '온보딩 완료!',
         );
       } else {
         // Move to next question
+        final nextQuestion = response.question ?? response.message ?? '다음 질문을 불러오는 중...';
+
+        // If question is still empty, show error
+        if (nextQuestion.isEmpty) {
+          state = state.copyWith(
+            isLoading: false,
+            errorMessage: '다음 질문을 받지 못했습니다. 다시 시도해주세요.',
+          );
+          return;
+        }
+
         state = state.copyWith(
           currentStep: response.step ?? state.currentStep + 1,
-          currentQuestion: response.question ?? response.message,
+          currentQuestion: nextQuestion,
           isLoading: false,
         );
       }
