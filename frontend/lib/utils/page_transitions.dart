@@ -123,11 +123,11 @@ class AppNavigation {
   }
 
   /// Navigate to Settings screen with slide from right
-  static Future<T?> toSettings<T>(BuildContext context) {
+  static Future<T?> toSettings<T>(BuildContext context, String userId) {
     return Navigator.push<T>(
       context,
       SlidePageRoute(
-        page: _buildSettingsScreen(),
+        page: _buildSettingsScreen(userId),
         direction: SlideDirection.fromRight,
       ),
     );
@@ -154,7 +154,7 @@ class AppNavigation {
     return ProfileScreen(userId: userId);
   }
 
-  static Widget _buildSettingsScreen() {
-    return const SettingsScreen();
+  static Widget _buildSettingsScreen(String userId) {
+    return SettingsScreen(userId: userId);
   }
 }

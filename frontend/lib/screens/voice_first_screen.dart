@@ -256,7 +256,7 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
                 IconButton(
                   icon: const Icon(Icons.settings, color: Colors.white, size: 28),
                   onPressed: () {
-                    AppNavigation.toSettings(context);
+                    AppNavigation.toSettings(context, widget.userId);
                   },
                 ),
               ],
