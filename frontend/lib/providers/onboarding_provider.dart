@@ -16,6 +16,8 @@ class OnboardingState {
   final int currentStep;
   final int totalSteps;
   final String? currentQuestion;
+  final String? currentQuestionType;  // personal_info, multiple_choice, open_ended
+  final List<Map<String, dynamic>>? currentOptions;  // For multiple choice questions
   final bool isCompleted;
   final bool isLoading;
   final String? errorMessage;
@@ -28,6 +30,8 @@ class OnboardingState {
     this.currentStep = 0,
     this.totalSteps = 6,
     this.currentQuestion,
+    this.currentQuestionType,
+    this.currentOptions,
     this.isCompleted = false,
     this.isLoading = false,
     this.errorMessage,
@@ -41,12 +45,15 @@ class OnboardingState {
     int? currentStep,
     int? totalSteps,
     String? currentQuestion,
+    String? currentQuestionType,
+    List<Map<String, dynamic>>? currentOptions,
     bool? isCompleted,
     bool? isLoading,
     String? errorMessage,
     OnboardingResult? result,
     PersonaType? persona,
     bool clearError = false,
+    bool clearOptions = false,
   }) {
     return OnboardingState(
       sessionId: sessionId ?? this.sessionId,
@@ -54,6 +61,8 @@ class OnboardingState {
       currentStep: currentStep ?? this.currentStep,
       totalSteps: totalSteps ?? this.totalSteps,
       currentQuestion: currentQuestion ?? this.currentQuestion,
+      currentQuestionType: currentQuestionType ?? this.currentQuestionType,
+      currentOptions: clearOptions ? null : (currentOptions ?? this.currentOptions),
       isCompleted: isCompleted ?? this.isCompleted,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
@@ -116,6 +125,8 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
         currentStep: response.step ?? 1,
         totalSteps: response.totalSteps ?? 6,
         currentQuestion: response.question ?? '질문을 불러오는 중...',
+        currentQuestionType: response.questionType,
+        currentOptions: response.options,
         isLoading: false,
         persona: persona,
       );
@@ -169,6 +180,8 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
         state = state.copyWith(
           currentStep: response.step ?? state.currentStep + 1,
           currentQuestion: nextQuestion,
+          currentQuestionType: response.questionType,
+          currentOptions: response.options,
           isLoading: false,
         );
       }
@@ -178,6 +191,12 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
         errorMessage: '응답 전송 실패: ${e.toString()}',
       );
     }
+  }
+
+  /// Respond to multiple choice question
+  Future<void> respondWithOption(String selectedValue, String selectedLabel) async {
+    // For multiple choice, we send both the value and the label as user response
+    await respondToQuestion(selectedLabel);
   }
 
   /// Resume existing session

@@ -224,14 +224,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 if (onboardingState.currentQuestion != null)
                   _buildQuestionDisplay(onboardingState.currentQuestion!),
 
-                const SizedBox(height: 64),
+                const SizedBox(height: 24),
 
-                // Push-to-talk button
-                PushToTalkButton(
-                  mode: _isRecording ? AppMode.listening : AppMode.idle,
-                  onPressStart: _startRecording,
-                  onPressEnd: _stopRecordingAndRespond,
-                ),
+                // Multiple choice options (if applicable)
+                if (onboardingState.currentQuestionType == 'multiple_choice' &&
+                    onboardingState.currentOptions != null)
+                  _buildMultipleChoiceOptions(onboardingState.currentOptions!),
+
+                const Spacer(),
+
+                // Push-to-talk button (for open-ended questions)
+                if (onboardingState.currentQuestionType != 'multiple_choice')
+                  PushToTalkButton(
+                    mode: _isRecording ? AppMode.listening : AppMode.idle,
+                    onPressStart: _startRecording,
+                    onPressEnd: _stopRecordingAndRespond,
+                  ),
 
                 const SizedBox(height: 100),
               ],
@@ -374,6 +382,60 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMultipleChoiceOptions(List<Map<String, dynamic>> options) {
+    final onboarding = ref.read(onboardingProvider.notifier);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: options.map((option) {
+          final value = option['value'] as String;
+          final labelKr = option['label_kr'] as String;
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () async {
+                  await onboarding.respondWithOption(value, labelKr);
+
+                  // Check if completed
+                  final state = ref.read(onboardingProvider);
+                  if (state.isCompleted && state.userId != null) {
+                    _navigateToMainScreen(state.userId!);
+                  }
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(UIConstants.electricCyan).withValues(alpha: 0.5),
+                      width: 2,
+                    ),
+                  ),
+                  child: Text(
+                    labelKr,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: UIConstants.fontBody,
+                      height: 1.4,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }

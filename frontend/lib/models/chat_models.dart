@@ -131,6 +131,8 @@ class CameraFrame {
 class OnboardingResponse {
   final String? sessionId;
   final String? question;
+  final String? questionType;  // personal_info, multiple_choice, open_ended
+  final List<Map<String, dynamic>>? options;  // For multiple choice questions
   final int? step;
   final int? totalSteps;
   final bool completed;
@@ -140,6 +142,8 @@ class OnboardingResponse {
   OnboardingResponse({
     this.sessionId,
     this.question,
+    this.questionType,
+    this.options,
     this.step,
     this.totalSteps,
     required this.completed,
@@ -159,9 +163,18 @@ class OnboardingResponse {
       questionText = null;
     }
 
+    // Parse options for multiple choice questions
+    List<Map<String, dynamic>>? options;
+    if (json['options'] != null) {
+      final optionsList = json['options'] as List;
+      options = optionsList.map((opt) => Map<String, dynamic>.from(opt as Map)).toList();
+    }
+
     return OnboardingResponse(
       sessionId: json['session_id'] as String?,
       question: questionText,
+      questionType: json['question_type'] as String?,
+      options: options,
       step: json['step'] as int?,
       totalSteps: json['total_steps'] as int?,
       completed: json['completed'] as bool? ?? false,
