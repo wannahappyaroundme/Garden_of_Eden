@@ -161,6 +161,10 @@ class UserProfile(BaseModel):
     last_updated: datetime = Field(default_factory=datetime.now)
     created_at: datetime = Field(default_factory=datetime.now)
 
+    # Personal Information (NEW - from onboarding V3)
+    name: Optional[str] = None
+    preferred_language: str = "ko"
+
     # Core Elements
     core_identity: Optional[CoreElement] = None
     core_motivation: Optional[CoreElement] = None
@@ -187,6 +191,14 @@ class UserProfile(BaseModel):
 
     # Meta Learning
     meta_learning: MetaLearning = Field(default_factory=MetaLearning)
+
+    # Adaptive Persona System (NEW)
+    current_persona_mode: str = "mentor"  # mentor|supporter|friend
+    persona_evolution_readiness: float = Field(default=0.3, ge=0.0, le=1.0)
+    persona_mode_history: List[Dict[str, str]] = Field(default_factory=list)  # [{mode, timestamp, trigger}]
+    trust_score: float = Field(default=0.3, ge=0.0, le=1.0)  # How much user trusts the AI
+    vulnerability_count: int = 0  # Times user showed vulnerability
+    positive_interaction_streak: int = 0  # Consecutive positive interactions
 
     def get_trait(self, trait_name: str) -> Optional[PersonalityTrait]:
         """Get a specific personality trait"""
