@@ -24,6 +24,7 @@ from services.stt_service import STTService
 from services.tts_service import TTSService
 from services.master_directive_processor import MasterDirectiveProcessor
 from services.onboarding_service import OnboardingService
+from services.onboarding_v3_service import OnboardingV3Service
 from services.session_manager import SessionManager
 from services.goal_progress_service import GoalProgressService
 from services.analytics_service import AnalyticsService
@@ -70,6 +71,7 @@ stt_service: Optional[STTService] = None
 tts_service: Optional[TTSService] = None
 master_processor: Optional[MasterDirectiveProcessor] = None
 onboarding_service: Optional[OnboardingService] = None
+onboarding_v3_service: Optional[OnboardingV3Service] = None
 session_manager: Optional[SessionManager] = None
 goal_progress_service: Optional[GoalProgressService] = None
 
@@ -78,7 +80,7 @@ goal_progress_service: Optional[GoalProgressService] = None
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup/shutdown"""
     # Startup
-    global db_service, llm_service, stt_service, tts_service, master_processor, onboarding_service, session_manager, goal_progress_service, analytics_service, voice_customization_service, notification_service
+    global db_service, llm_service, stt_service, tts_service, master_processor, onboarding_service, onboarding_v3_service, session_manager, goal_progress_service, analytics_service, voice_customization_service, notification_service
 
     logger.info("Starting Project Eden V2 Backend...")
 
@@ -101,6 +103,10 @@ async def lifespan(app: FastAPI):
 
         # Initialize onboarding and session services
         onboarding_service = OnboardingService(
+            llm_service=llm_service,
+            db_service=db_service
+        )
+        onboarding_v3_service = OnboardingV3Service(
             llm_service=llm_service,
             db_service=db_service
         )
@@ -336,6 +342,13 @@ def get_onboarding_service() -> OnboardingService:
     if onboarding_service is None:
         raise HTTPException(status_code=500, detail="Onboarding service not initialized")
     return onboarding_service
+
+
+def get_onboarding_v3_service() -> OnboardingV3Service:
+    """Dependency to get onboarding V3 service"""
+    if onboarding_v3_service is None:
+        raise HTTPException(status_code=500, detail="Onboarding V3 service not initialized")
+    return onboarding_v3_service
 
 
 def get_session_manager() -> SessionManager:
@@ -629,16 +642,16 @@ class OnboardingStartRequest(BaseModel):
 @app.post("/api/v2/onboarding/start", tags=["Onboarding"])
 async def start_onboarding(
     request: OnboardingStartRequest,
-    onboarding: OnboardingService = Depends(get_onboarding_service)
+    onboarding_v3: OnboardingV3Service = Depends(get_onboarding_v3_service)
 ):
     """
-    Start a new onboarding session
+    Start a new onboarding V3 session with personality profiling
 
     Args:
         request: Onboarding start request with user_id and persona
 
     Returns:
-        session_id and first question
+        session_id, first question, and metadata
     """
     try:
         # Validate persona
@@ -647,48 +660,42 @@ async def start_onboarding(
         except ValueError:
             raise HTTPException(status_code=400, detail=f"Invalid persona: {request.persona}. Must be 'adam' or 'eve'")
 
-        # Start session
-        session = await onboarding.start_onboarding(user_id=request.user_id, persona=persona_type)
+        # Start V3 session
+        result = await onboarding_v3.start_onboarding(user_id=request.user_id, persona=persona_type)
 
-        # Get first question
-        first_question = await onboarding.get_first_question(session.session_id)
-
-        return {
-            "session_id": session.session_id,
-            "question": first_question,
-            "step": 1,
-            "total_steps": 6
-        }
+        return result
 
     except Exception as e:
-        logger.error(f"Error starting onboarding: {e}")
+        logger.error(f"Error starting onboarding V3: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 class OnboardingRespondRequest(BaseModel):
     session_id: str
     user_response: str
+    selected_option: Optional[str] = None  # For multiple choice questions
 
 
 @app.post("/api/v2/onboarding/respond", tags=["Onboarding"])
 async def respond_to_onboarding(
     request: OnboardingRespondRequest,
-    onboarding: OnboardingService = Depends(get_onboarding_service)
+    onboarding_v3: OnboardingV3Service = Depends(get_onboarding_v3_service)
 ):
     """
-    Process user response to onboarding question
+    Process user response to onboarding V3 question
 
     Args:
-        request: Onboarding response request with session_id and user_response
+        request: Onboarding response request with session_id, user_response, and optional selected_option
 
     Returns:
         Next question or completion result
     """
     try:
-        # Process response
-        result = await onboarding.process_response(
+        # Process V3 response
+        result = await onboarding_v3.process_response(
             session_id=request.session_id,
-            user_response=request.user_response
+            user_response=request.user_response,
+            selected_option=request.selected_option
         )
 
         return result
@@ -696,36 +703,35 @@ async def respond_to_onboarding(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        logger.error(f"Error processing onboarding response: {e}")
+        logger.error(f"Error processing onboarding V3 response: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/v2/onboarding/status/{session_id}", tags=["Onboarding"])
 async def get_onboarding_status(
     session_id: str,
-    onboarding: OnboardingService = Depends(get_onboarding_service)
+    onboarding_v3: OnboardingV3Service = Depends(get_onboarding_v3_service)
 ):
-    """Get onboarding session status"""
+    """Get onboarding V3 session status"""
     try:
-        session = await onboarding.get_session(session_id)
+        session = await onboarding_v3.get_session(session_id)
 
         if not session:
             raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
 
         return {
-            "session_id": session.session_id,
-            "user_id": session.user_id,
-            "persona": session.persona.value,
-            "current_step": session.current_step,
-            "completed": session.completed,
-            "one_thing_identified": session.one_thing_identified,
-            "turn_count": len(session.turns)
+            "session_id": session.get("session_id"),
+            "user_id": session.get("user_id"),
+            "persona": session.get("persona", "adam"),
+            "current_step": session.get("current_step", 1),
+            "total_steps": session.get("total_steps", 6),
+            "completed": session.get("completed", False)
         }
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting onboarding status: {e}")
+        logger.error(f"Error getting onboarding V3 status: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
