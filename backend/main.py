@@ -621,18 +621,21 @@ async def transcribe_audio(
 
 # ==================== Onboarding Endpoints ====================
 
+class OnboardingStartRequest(BaseModel):
+    user_id: str
+    persona: str = "adam"
+
+
 @app.post("/api/v2/onboarding/start", tags=["Onboarding"])
 async def start_onboarding(
-    user_id: str = Form(...),
-    persona: str = Form("adam"),
+    request: OnboardingStartRequest,
     onboarding: OnboardingService = Depends(get_onboarding_service)
 ):
     """
     Start a new onboarding session
 
     Args:
-        user_id: User ID
-        persona: Persona type (adam or eve)
+        request: Onboarding start request with user_id and persona
 
     Returns:
         session_id and first question
@@ -640,12 +643,12 @@ async def start_onboarding(
     try:
         # Validate persona
         try:
-            persona_type = PersonaType(persona)
+            persona_type = PersonaType(request.persona)
         except ValueError:
-            raise HTTPException(status_code=400, detail=f"Invalid persona: {persona}. Must be 'adam' or 'eve'")
+            raise HTTPException(status_code=400, detail=f"Invalid persona: {request.persona}. Must be 'adam' or 'eve'")
 
         # Start session
-        session = await onboarding.start_onboarding(user_id=user_id, persona=persona_type)
+        session = await onboarding.start_onboarding(user_id=request.user_id, persona=persona_type)
 
         # Get first question
         first_question = await onboarding.get_first_question(session.session_id)
@@ -662,18 +665,21 @@ async def start_onboarding(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class OnboardingRespondRequest(BaseModel):
+    session_id: str
+    user_response: str
+
+
 @app.post("/api/v2/onboarding/respond", tags=["Onboarding"])
 async def respond_to_onboarding(
-    session_id: str = Form(...),
-    user_response: str = Form(...),
+    request: OnboardingRespondRequest,
     onboarding: OnboardingService = Depends(get_onboarding_service)
 ):
     """
     Process user response to onboarding question
 
     Args:
-        session_id: Onboarding session ID
-        user_response: User's response text
+        request: Onboarding response request with session_id and user_response
 
     Returns:
         Next question or completion result
@@ -681,8 +687,8 @@ async def respond_to_onboarding(
     try:
         # Process response
         result = await onboarding.process_response(
-            session_id=session_id,
-            user_response=user_response
+            session_id=request.session_id,
+            user_response=request.user_response
         )
 
         return result
