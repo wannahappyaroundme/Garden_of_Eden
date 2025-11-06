@@ -2,9 +2,11 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../utils/constants.dart';
+import '../providers/service_providers.dart';
 
-class VoiceSettingsScreen extends StatefulWidget {
+class VoiceSettingsScreen extends ConsumerStatefulWidget {
   final String userId;
 
   const VoiceSettingsScreen({
@@ -13,11 +15,15 @@ class VoiceSettingsScreen extends StatefulWidget {
   });
 
   @override
-  State<VoiceSettingsScreen> createState() => _VoiceSettingsScreenState();
+  ConsumerState<VoiceSettingsScreen> createState() => _VoiceSettingsScreenState();
 }
 
-class _VoiceSettingsScreenState extends State<VoiceSettingsScreen> {
+class _VoiceSettingsScreenState extends ConsumerState<VoiceSettingsScreen> {
+  bool _isLoading = true;
+  bool _isSaving = false;
+
   String _selectedVoice = 'default';
+  PersonaType _voiceGender = PersonaType.adam;  // Adam (male) or Eve (female)
   double _speed = 1.0;
   double _pitch = 1.0;
   double _volume = 1.0;
@@ -36,6 +42,53 @@ class _VoiceSettingsScreenState extends State<VoiceSettingsScreen> {
   };
 
   @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      final settings = await apiService.getVoiceSettings(widget.userId);
+
+      setState(() {
+        _selectedVoice = settings['voice_type'] ?? 'default';
+        _speed = (settings['speed'] ?? 1.0).toDouble();
+        _pitch = (settings['pitch'] ?? 1.0).toDouble();
+        _volume = (settings['volume'] ?? 1.0).toDouble();
+
+        // Parse voice gender from persona field
+        final persona = settings['persona'] ?? 'adam';
+        _voiceGender = persona == 'eve' ? PersonaType.eve : PersonaType.adam;
+
+        // Persona traits
+        if (settings['persona_traits'] != null) {
+          final traits = settings['persona_traits'] as Map<String, dynamic>;
+          _empathy = (traits['empathy'] ?? 3).toInt();
+          _directness = (traits['directness'] ?? 3).toInt();
+          _formality = (traits['formality'] ?? 2).toInt();
+          _encouragement = (traits['encouragement'] ?? 4).toInt();
+        }
+
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load settings: $e'),
+            backgroundColor: Colors.red[700],
+          ),
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(UIConstants.pureBlack),
@@ -50,28 +103,53 @@ class _VoiceSettingsScreenState extends State<VoiceSettingsScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          TextButton(
-            onPressed: _saveSettings,
-            child: const Text(
-              'Save',
-              style: TextStyle(
-                color: Color(UIConstants.electricCyan),
-                fontWeight: FontWeight.bold,
+          if (_isSaving)
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  color: Color(UIConstants.electricCyan),
+                  strokeWidth: 2,
+                ),
+              ),
+            )
+          else
+            TextButton(
+              onPressed: _saveSettings,
+              child: const Text(
+                'Save',
+                style: TextStyle(
+                  color: Color(UIConstants.electricCyan),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(UIConstants.spacingLG),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Voice Selection
-            _buildSectionHeader('Voice Type', Icons.record_voice_over),
-            const SizedBox(height: UIConstants.spacingMD),
-            _buildVoiceSelector(),
-            const SizedBox(height: UIConstants.spacingXL),
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: Color(UIConstants.electricCyan),
+              ),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(UIConstants.spacingLG),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Voice Gender Selection (Adam/Eve)
+                  _buildSectionHeader('Voice Gender', Icons.wc),
+                  const SizedBox(height: UIConstants.spacingMD),
+                  _buildVoiceGenderSelector(),
+                  const SizedBox(height: UIConstants.spacingXL),
+
+                  // Voice Selection
+                  _buildSectionHeader('Voice Type', Icons.record_voice_over),
+                  const SizedBox(height: UIConstants.spacingMD),
+                  _buildVoiceSelector(),
+                  const SizedBox(height: UIConstants.spacingXL),
 
             // Voice Parameters
             _buildSectionHeader('Voice Parameters', Icons.tune),
@@ -125,6 +203,111 @@ class _VoiceSettingsScreenState extends State<VoiceSettingsScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildVoiceGenderSelector() {
+    return Container(
+      padding: const EdgeInsets.all(UIConstants.spacingMD),
+      decoration: BoxDecoration(
+        color: const Color(UIConstants.darkGrey),
+        borderRadius: BorderRadius.circular(UIConstants.spacingMD),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _voiceGender = PersonaType.adam;
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: UIConstants.spacingMD),
+                decoration: BoxDecoration(
+                  color: _voiceGender == PersonaType.adam
+                      ? const Color(UIConstants.electricCyan)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(UIConstants.spacingSM),
+                  border: Border.all(
+                    color: _voiceGender == PersonaType.adam
+                        ? const Color(UIConstants.electricCyan)
+                        : const Color(UIConstants.midGrey),
+                    width: 2,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.male,
+                      color: _voiceGender == PersonaType.adam
+                          ? Colors.black
+                          : Colors.white,
+                      size: 32,
+                    ),
+                    const SizedBox(height: UIConstants.spacingXS),
+                    Text(
+                      'Adam (Male)',
+                      style: TextStyle(
+                        color: _voiceGender == PersonaType.adam
+                            ? Colors.black
+                            : Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: UIConstants.spacingMD),
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _voiceGender = PersonaType.eve;
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: UIConstants.spacingMD),
+                decoration: BoxDecoration(
+                  color: _voiceGender == PersonaType.eve
+                      ? const Color(UIConstants.electricCyan)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(UIConstants.spacingSM),
+                  border: Border.all(
+                    color: _voiceGender == PersonaType.eve
+                        ? const Color(UIConstants.electricCyan)
+                        : const Color(UIConstants.midGrey),
+                    width: 2,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.female,
+                      color: _voiceGender == PersonaType.eve
+                          ? Colors.black
+                          : Colors.white,
+                      size: 32,
+                    ),
+                    const SizedBox(height: UIConstants.spacingXS),
+                    Text(
+                      'Eve (Female)',
+                      style: TextStyle(
+                        color: _voiceGender == PersonaType.eve
+                            ? Colors.black
+                            : Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -338,14 +521,51 @@ class _VoiceSettingsScreenState extends State<VoiceSettingsScreen> {
     );
   }
 
-  void _saveSettings() {
-    // TODO: Implement save to backend
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Settings saved successfully!'),
-        backgroundColor: Color(UIConstants.electricCyan),
-      ),
-    );
-    Navigator.pop(context);
+  Future<void> _saveSettings() async {
+    setState(() => _isSaving = true);
+
+    try {
+      final apiService = ref.read(apiServiceProvider);
+
+      // Prepare settings data
+      final settings = {
+        'voice_type': _selectedVoice,
+        'speed': _speed,
+        'pitch': _pitch,
+        'volume': _volume,
+        'persona': _voiceGender.name,  // 'adam' or 'eve'
+        'persona_traits': {
+          'empathy': _empathy,
+          'directness': _directness,
+          'formality': _formality,
+          'encouragement': _encouragement,
+        },
+      };
+
+      // Save to backend
+      await apiService.updateVoiceSettings(widget.userId, settings);
+
+      setState(() => _isSaving = false);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Settings saved successfully!'),
+            backgroundColor: Color(UIConstants.electricCyan),
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      setState(() => _isSaving = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save settings: $e'),
+            backgroundColor: Colors.red[700],
+          ),
+        );
+      }
+    }
   }
 }

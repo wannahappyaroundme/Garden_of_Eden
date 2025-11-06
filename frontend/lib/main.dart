@@ -3,9 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'screens/voice_first_screen.dart';
-import 'screens/persona_selection_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'services/cache_service.dart';
 import 'theme/app_theme.dart';
+import 'utils/constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -124,10 +125,11 @@ class _PermissionHandlerState extends State<PermissionHandler> {
         ),
       );
     } else {
-      // User needs to complete onboarding - go to persona selection
+      // User needs to complete onboarding - go directly to onboarding with Adam as default
+      // Note: Adam and Eve only differ by voice gender now, selectable in settings
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => const PersonaSelectionScreen(),
+          builder: (_) => const OnboardingScreen(persona: PersonaType.adam),
         ),
       );
     }

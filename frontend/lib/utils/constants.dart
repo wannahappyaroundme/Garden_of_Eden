@@ -39,6 +39,17 @@ class ApiConfig {
   static const String goalsCreateEndpoint = '/api/v2/goals/create';
   static const String goalsEndpoint = '/api/v2/goals';
 
+  // Voice settings endpoints
+  static const String voiceSettingsEndpoint = '/api/v2/voice';  // {userId}/settings
+  static const String voiceAvailableEndpoint = '/api/v2/voice/available-voices';
+  static const String voicePersonaTraitsEndpoint = '/api/v2/voice/persona-traits';
+
+  // Interaction mode endpoints
+  static const String interactionModeEndpoint = '/api/v2/settings';  // {userId}/interaction-mode
+
+  // Notification settings endpoints
+  static const String notificationSettingsEndpoint = '/api/v2/notifications';  // {userId}/settings
+
   static const Duration connectionTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 60);  // Increased for AI processing
 }

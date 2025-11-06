@@ -526,6 +526,112 @@ class ApiService {
     );
   }
 
+  // ==================== Voice Settings ====================
+
+  /// Get voice settings for user
+  Future<Map<String, dynamic>> getVoiceSettings(String userId) async {
+    return await _retryableRequest(
+      request: () async {
+        final response = await _dio.get(
+          '${ApiConfig.voiceSettingsEndpoint}/$userId/settings',
+        );
+        return response.data as Map<String, dynamic>;
+      },
+    );
+  }
+
+  /// Update voice settings for user
+  Future<void> updateVoiceSettings(
+    String userId,
+    Map<String, dynamic> settings,
+  ) async {
+    return await _retryableRequest(
+      request: () async {
+        await _dio.put(
+          '${ApiConfig.voiceSettingsEndpoint}/$userId/settings',
+          data: settings,
+        );
+      },
+    );
+  }
+
+  /// Get available voice options
+  Future<List<dynamic>> getAvailableVoices() async {
+    return await _retryableRequest(
+      request: () async {
+        final response = await _dio.get(ApiConfig.voiceAvailableEndpoint);
+        return response.data as List<dynamic>;
+      },
+    );
+  }
+
+  /// Get persona trait configurations
+  Future<Map<String, dynamic>> getPersonaTraits() async {
+    return await _retryableRequest(
+      request: () async {
+        final response = await _dio.get(ApiConfig.voicePersonaTraitsEndpoint);
+        return response.data as Map<String, dynamic>;
+      },
+    );
+  }
+
+  // ==================== Interaction Mode ====================
+
+  /// Get user's interaction mode (ai_led or user_led)
+  Future<String> getInteractionMode(String userId) async {
+    return await _retryableRequest(
+      request: () async {
+        final response = await _dio.get(
+          '${ApiConfig.interactionModeEndpoint}/$userId/interaction-mode',
+        );
+        return response.data['mode'] as String;
+      },
+    );
+  }
+
+  /// Update user's interaction mode
+  Future<void> updateInteractionMode(String userId, String mode) async {
+    return await _retryableRequest(
+      request: () async {
+        await _dio.put(
+          '${ApiConfig.interactionModeEndpoint}/$userId/interaction-mode',
+          data: {'mode': mode},
+        );
+      },
+    );
+  }
+
+  // ==================== Notification Settings ====================
+
+  /// Get notification settings for user
+  Future<Map<String, dynamic>> getNotificationSettings(String userId) async {
+    return await _retryableRequest(
+      request: () async {
+        final response = await _dio.get(
+          '${ApiConfig.notificationSettingsEndpoint}/$userId/settings',
+        );
+        return response.data as Map<String, dynamic>;
+      },
+    );
+  }
+
+  /// Update notification settings for user
+  Future<void> updateNotificationSettings(
+    String userId,
+    Map<String, dynamic> settings,
+  ) async {
+    return await _retryableRequest(
+      request: () async {
+        await _dio.put(
+          '${ApiConfig.notificationSettingsEndpoint}/$userId/settings',
+          data: settings,
+        );
+      },
+    );
+  }
+
+  // ==================== Error Handling ====================
+
   /// Handle Dio errors
   ApiException _handleDioError(DioException e) {
     switch (e.type) {
