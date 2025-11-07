@@ -102,11 +102,12 @@ class TTSService:
                     ssml_gender=voice_config["gender"]
                 )
 
-                # Select the audio file type
+                # Select the audio file type with natural-sounding settings
                 audio_config = texttospeech.AudioConfig(
                     audio_encoding=texttospeech.AudioEncoding.MP3,
-                    speaking_rate=1.0,  # Normal speed
-                    pitch=0.0  # Normal pitch
+                    speaking_rate=0.95,  # Slightly slower for more natural feel
+                    pitch=-2.0,  # Slightly lower pitch for warmth
+                    effects_profile_id=["small-bluetooth-speaker-class-device"]  # Optimized for mobile
                 )
 
                 # Perform the text-to-speech request
