@@ -1,34 +1,45 @@
 """
-Text-to-Speech Service using Edge TTS
-FREE, high-quality neural voices with Adam/Eve persona distinction
+Text-to-Speech Service using Google Cloud TTS
+High-quality neural voices with Adam/Eve persona distinction
 """
 import os
-import edge_tts
+from google.cloud import texttospeech
 from pathlib import Path
 import base64
 from typing import Optional
-import asyncio
 
 from utils.logger import get_logger
 from utils.constants import PersonaType
 
 logger = get_logger(__name__)
 
-# Voice mapping for personas using Microsoft Edge Neural Voices
-# Adam: Masculine voice (InJoon)
-# Eve: Feminine voice (SunHi)
-EDGE_TTS_VOICES = {
-    PersonaType.ADAM: "ko-KR-InJoonNeural",  # Male voice for Adam
-    PersonaType.EVE: "ko-KR-SunHiNeural"      # Female voice for Eve
+# Voice mapping for personas using Google Cloud Neural2 Voices
+# Adam: Masculine voice (Neural2-C)
+# Eve: Feminine voice (Neural2-A)
+GOOGLE_TTS_VOICES = {
+    PersonaType.ADAM: {
+        "name": "ko-KR-Neural2-C",  # Male voice for Adam
+        "gender": texttospeech.SsmlVoiceGender.MALE
+    },
+    PersonaType.EVE: {
+        "name": "ko-KR-Neural2-A",  # Female voice for Eve
+        "gender": texttospeech.SsmlVoiceGender.FEMALE
+    }
 }
 
 
 class TTSService:
-    """Service for text-to-speech using Microsoft Edge TTS (Neural Voices)"""
+    """Service for text-to-speech using Google Cloud TTS (Neural2 Voices)"""
 
     def __init__(self):
         """Initialize TTS service"""
-        logger.info("Edge TTS service initialized (Neural Korean voices)")
+        try:
+            # Initialize Google Cloud TTS client
+            self.client = texttospeech.TextToSpeechClient()
+            logger.info("✅ Google Cloud TTS service initialized (Neural2 Korean voices)")
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize Google Cloud TTS: {e}")
+            self.client = None
 
     async def generate_speech(
         self,
@@ -38,7 +49,7 @@ class TTSService:
         max_retries: int = 3
     ) -> Optional[str]:
         """
-        Generate speech from text using Edge TTS neural voices
+        Generate speech from text using Google Cloud TTS neural voices
 
         Args:
             text: Text to convert to speech
@@ -49,8 +60,12 @@ class TTSService:
         Returns:
             Path to generated audio file or None if error
         """
+        if not self.client:
+            logger.error("TTS client not initialized")
+            return None
+
         # Select voice based on persona
-        voice = EDGE_TTS_VOICES.get(persona, EDGE_TTS_VOICES[PersonaType.ADAM])
+        voice_config = GOOGLE_TTS_VOICES.get(persona, GOOGLE_TTS_VOICES[PersonaType.ADAM])
 
         # Generate output path if not provided
         if output_path is None:
@@ -59,22 +74,45 @@ class TTSService:
             import uuid
             output_path = str(output_dir / f"tts_{uuid.uuid4()}.mp3")
 
-        logger.info(f"Generating TTS with {persona.value} voice ({voice}) using Edge TTS")
+        logger.info(f"Generating TTS with {persona.value} voice ({voice_config['name']}) using Google Cloud TTS")
 
         # Retry logic for network requests
         for attempt in range(max_retries):
             try:
-                # Create Edge TTS communicator
-                communicate = edge_tts.Communicate(text, voice)
+                # Set the text input
+                synthesis_input = texttospeech.SynthesisInput(text=text)
 
-                # Generate and save audio
-                await communicate.save(output_path)
+                # Build the voice request
+                voice = texttospeech.VoiceSelectionParams(
+                    language_code="ko-KR",
+                    name=voice_config["name"],
+                    ssml_gender=voice_config["gender"]
+                )
+
+                # Select the audio file type
+                audio_config = texttospeech.AudioConfig(
+                    audio_encoding=texttospeech.AudioEncoding.MP3,
+                    speaking_rate=1.0,  # Normal speed
+                    pitch=0.0  # Normal pitch
+                )
+
+                # Perform the text-to-speech request
+                response = self.client.synthesize_speech(
+                    input=synthesis_input,
+                    voice=voice,
+                    audio_config=audio_config
+                )
+
+                # Write the response to the output file
+                with open(output_path, "wb") as out:
+                    out.write(response.audio_content)
 
                 logger.info(f"✅ TTS generated successfully: {output_path}")
                 return output_path
 
             except Exception as e:
                 if attempt < max_retries - 1:
+                    import asyncio
                     wait_time = (attempt + 1) * 2  # 2s, 4s, 6s...
                     logger.warning(f"⚠️ TTS attempt {attempt + 1} failed: {e}. Retrying in {wait_time}s...")
                     await asyncio.sleep(wait_time)
@@ -124,51 +162,19 @@ class TTSService:
             logger.error(f"Error generating base64 TTS: {e}")
             return None
 
-    async def generate_speech_stream(
-        self,
-        text: str,
-        persona: PersonaType
-    ):
-        """
-        Generate speech as a stream (yields audio chunks)
-
-        Args:
-            text: Text to convert to speech
-            persona: Adam or Eve
-
-        Yields:
-            Audio data chunks
-        """
-        # Select voice based on persona
-        voice = EDGE_TTS_VOICES.get(persona, EDGE_TTS_VOICES[PersonaType.ADAM])
-
-        logger.info(f"Streaming TTS with {persona.value} voice ({voice})")
-
-        try:
-            # Create Edge TTS communicator
-            communicate = edge_tts.Communicate(text, voice)
-
-            # Stream audio chunks
-            async for chunk in communicate.stream():
-                if chunk["type"] == "audio":
-                    yield chunk["data"]
-
-        except Exception as e:
-            logger.error(f"Error streaming TTS: {e}")
-
     async def get_available_voices(self) -> list:
         """Get list of available Korean voices"""
         return [
             {
-                "Name": "InJoon (Adam)",
-                "Voice": "ko-KR-InJoonNeural",
+                "Name": "Neural2-C (Adam)",
+                "Voice": "ko-KR-Neural2-C",
                 "Locale": "ko-KR",
                 "Gender": "Male",
                 "Persona": "Adam"
             },
             {
-                "Name": "SunHi (Eve)",
-                "Voice": "ko-KR-SunHiNeural",
+                "Name": "Neural2-A (Eve)",
+                "Voice": "ko-KR-Neural2-A",
                 "Locale": "ko-KR",
                 "Gender": "Female",
                 "Persona": "Eve"
