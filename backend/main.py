@@ -1396,6 +1396,74 @@ async def get_persona_traits(
     return voice_service.get_persona_trait_configs()
 
 
+# ==================== Interaction Mode Endpoints ====================
+
+@app.get("/api/v2/settings/{user_id}/interaction-mode", tags=["Settings"])
+async def get_interaction_mode(
+    user_id: str,
+    db: MemoryDBService = Depends(get_db_service)
+):
+    """
+    Get user's interaction mode
+
+    Returns:
+        mode: "ai_led" or "user_led"
+    """
+    try:
+        profile = await db.get_user_profile(user_id)
+        return {
+            "mode": profile.interaction_mode,
+            "description": "AI asks questions" if profile.interaction_mode == "ai_led" else "User asks questions"
+        }
+    except Exception as e:
+        logger.error(f"Error getting interaction mode: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class InteractionModeRequest(BaseModel):
+    mode: str  # "ai_led" or "user_led"
+
+
+@app.put("/api/v2/settings/{user_id}/interaction-mode", tags=["Settings"])
+async def update_interaction_mode(
+    user_id: str,
+    request: InteractionModeRequest,
+    db: MemoryDBService = Depends(get_db_service)
+):
+    """
+    Update user's interaction mode
+
+    Args:
+        mode: "ai_led" (AI asks questions, user answers) or "user_led" (User asks questions, AI answers)
+    """
+    try:
+        # Validate mode
+        if request.mode not in ["ai_led", "user_led"]:
+            raise HTTPException(status_code=400, detail="Mode must be 'ai_led' or 'user_led'")
+
+        # Get profile
+        profile = await db.get_user_profile(user_id)
+
+        # Update interaction mode
+        profile.interaction_mode = request.mode
+
+        # Save profile
+        await db.update_user_profile(user_id, profile)
+
+        logger.info(f"Updated interaction mode for user {user_id} to {request.mode}")
+
+        return {
+            "success": True,
+            "mode": request.mode,
+            "message": f"Interaction mode updated to {request.mode}"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating interaction mode: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ==================== Notification Endpoints ====================
 
 class FCMTokenRequest(BaseModel):

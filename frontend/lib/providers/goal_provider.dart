@@ -1,7 +1,6 @@
 /// Goal Progress Provider - State management for goal tracking
 library;
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/goal_models.dart';
 import '../services/api_service.dart';
@@ -124,10 +123,7 @@ class GoalProgress extends _$GoalProgress {
   /// Load progress history
   Future<void> loadProgressHistory(String userId, {int days = 30}) async {
     try {
-      final history = await _api.getProgressHistory(
-        userId: userId,
-        days: days,
-      );
+      final history = await _api.getProgressHistory(userId: userId, days: days);
 
       state = state.copyWith(history: history);
     } catch (e) {
@@ -138,10 +134,7 @@ class GoalProgress extends _$GoalProgress {
 
   /// Refresh all goal data
   Future<void> refresh(String userId) async {
-    await Future.wait([
-      loadGoalSummary(userId),
-      loadProgressHistory(userId),
-    ]);
+    await Future.wait([loadGoalSummary(userId), loadProgressHistory(userId)]);
   }
 
   // ==================== Progress Recording ====================
@@ -202,9 +195,7 @@ class GoalProgress extends _$GoalProgress {
 
       return true;
     } catch (e) {
-      state = state.copyWith(
-        error: '마일스톤 업데이트 실패: ${e.toString()}',
-      );
+      state = state.copyWith(error: '마일스톤 업데이트 실패: ${e.toString()}');
       return false;
     }
   }
@@ -392,12 +383,16 @@ class ProgressEntryState {
   bool get isValid => reflection != null || metrics.isNotEmpty;
 
   List<Map<String, dynamic>> get metricsJson {
-    return metrics.map((m) => {
-      'name': m.name,
-      'value': m.value,
-      'unit': m.unit,
-      'metric_type': m.metricType.name,
-    }).toList();
+    return metrics
+        .map(
+          (m) => {
+            'name': m.name,
+            'value': m.value,
+            'unit': m.unit,
+            'metric_type': m.metricType.name,
+          },
+        )
+        .toList();
   }
 }
 
@@ -417,9 +412,7 @@ class ProgressEntry extends _$ProgressEntry {
   }
 
   void addMetric(GoalMetric metric) {
-    state = state.copyWith(
-      metrics: [...state.metrics, metric],
-    );
+    state = state.copyWith(metrics: [...state.metrics, metric]);
   }
 
   void removeMetric(int index) {

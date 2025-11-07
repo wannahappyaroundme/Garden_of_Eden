@@ -197,6 +197,9 @@ class UserProfile(BaseModel):
     persona_evolution_readiness: float = Field(default=0.3, ge=0.0, le=1.0)
     persona_mode_history: List[Dict[str, str]] = Field(default_factory=list)  # [{mode, timestamp, trigger}]
     trust_score: float = Field(default=0.3, ge=0.0, le=1.0)  # How much user trusts the AI
+
+    # Interaction Mode (NEW)
+    interaction_mode: str = "ai_led"  # ai_led (AI asks questions) | user_led (User asks questions)
     vulnerability_count: int = 0  # Times user showed vulnerability
     positive_interaction_streak: int = 0  # Consecutive positive interactions
 
