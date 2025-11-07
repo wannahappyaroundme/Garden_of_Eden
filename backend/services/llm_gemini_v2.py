@@ -130,7 +130,10 @@ class GeminiService:
                     persona_name=persona_name
                 )
 
-            # Build complete Master Directive prompt with RAG, WebSearch, and Goal Tracking
+            # Get interaction mode from user profile
+            interaction_mode = user_profile.interaction_mode  # "ai_led" or "user_led"
+
+            # Build complete Master Directive prompt with RAG, WebSearch, Goal Tracking, and Interaction Mode
             master_directive = build_master_directive(
                 user_message=user_message,
                 user_profile_context=profile_context,
@@ -142,6 +145,7 @@ class GeminiService:
                 core_pitfall=core_pitfall,
                 pitfall_triggers=pitfall_triggers,
                 detected_topic=detected_topic,
+                interaction_mode=interaction_mode,
                 mode_specific_instructions=mode_instructions,
                 rag_context=rag_context,
                 web_context=web_context,

@@ -21,6 +21,9 @@ CORE PRINCIPLE: Ask questions that make them think. Guide toward self-discovery.
 You are {persona_name}.
 {persona_details}
 
+[3.5. INTERACTION MODE]
+{interaction_mode_context}
+
 [4. RECENT MEMORY - Conversation History]
 {recent_memory}
 
@@ -268,20 +271,23 @@ def build_master_directive(
     core_pitfall: str,
     pitfall_triggers: str,
     detected_topic: str,
+    interaction_mode: str = "ai_led",
     mode_specific_instructions: str = "",
     rag_context: str = "No semantic memory retrieved.",
     web_context: str = "No web search performed.",
     goal_context: str = "No goal tracking info available."
 ) -> str:
-    """Build the complete Master Directive prompt with RAG, WebSearch, and Goal Tracking"""
+    """Build the complete Master Directive prompt with RAG, WebSearch, Goal Tracking, and Interaction Mode"""
 
     persona_details = ADAM_PERSONA_DETAILS if persona_name.lower() == "adam" else EVE_PERSONA_DETAILS
+    interaction_mode_context = get_interaction_mode_context(interaction_mode)
 
     return MASTER_DIRECTIVE_TEMPLATE.format(
         user_profile=user_profile_context,
         learning_preferences=learning_preferences_context,
         persona_name=persona_name,
         persona_details=persona_details,
+        interaction_mode_context=interaction_mode_context,
         recent_memory=recent_memory,
         rag_context=rag_context,
         web_context=web_context,
@@ -330,3 +336,76 @@ def build_supporter_mode(
         intensity=intensity,
         persona_name=persona_name
     )
+
+
+def get_interaction_mode_context(interaction_mode: str) -> str:
+    """
+    Generate interaction mode context string based on user's preferred mode
+
+    Args:
+        interaction_mode: Either "ai_led" or "user_led"
+
+    Returns:
+        Context string to inject into Master Directive
+    """
+    if interaction_mode == "ai_led":
+        return AI_LED_MODE_CONTEXT
+    elif interaction_mode == "user_led":
+        return USER_LED_MODE_CONTEXT
+    else:
+        # Default to AI-led if unknown mode
+        return AI_LED_MODE_CONTEXT
+
+
+AI_LED_MODE_CONTEXT = """
+🎯 INTERACTION MODE: AI-Led (질문 받는 모드)
+
+In this mode, YOU (the AI mentor) take the lead in the conversation.
+
+**Your Primary Behavior:**
+- **Proactively ask questions** to guide the user's thinking
+- **Take initiative** in exploring topics and deepening their self-awareness
+- **Structure the conversation** around your Socratic questioning approach
+- **Guide the user** through their thought process step-by-step
+
+**How to Respond:**
+- When user shares something → Ask follow-up questions to deepen exploration
+- When user is vague → Ask clarifying questions to help them be more specific
+- When user seeks answers → Respond with questions that guide them to their own insights
+- When user is stuck → Ask questions that reveal new perspectives
+
+**Example Flow:**
+User: "오늘 힘들었어요" (Today was hard)
+You: "무엇이 가장 힘들었나요? 그 순간에 어떤 생각이 들었나요?" (What was hardest? What thoughts came up in that moment?)
+
+**Key Principle:**
+Your questions drive the conversation. The user primarily responds and reflects.
+"""
+
+
+USER_LED_MODE_CONTEXT = """
+🎯 INTERACTION MODE: User-Led (질문 하는 모드)
+
+In this mode, the USER takes the lead in the conversation.
+
+**Your Primary Behavior:**
+- **Respond to their questions** with thoughtful, mentor-style answers
+- **Wait for them to ask** rather than proactively questioning
+- **Provide guidance and perspective** when requested
+- **Be available as a resource** they can consult
+
+**How to Respond:**
+- When user asks a question → Give a thoughtful answer, then briefly check if they want to explore deeper
+- When user shares a problem → Offer perspective and potential approaches
+- When user seeks advice → Provide wisdom while still encouraging their autonomy
+- After answering → Offer ONE gentle optional question like "이것에 대해 더 이야기하고 싶으세요?" (Want to explore this more?)
+
+**Example Flow:**
+User: "이 상황에서 어떻게 해야 할까요?" (What should I do in this situation?)
+You: [Provide thoughtful perspective and guidance] "...이 점을 고려해보세요. 더 이야기하고 싶은 부분이 있나요?" (Consider this. Anything else you'd like to discuss?)
+
+**Key Principle:**
+The user's questions drive the conversation. You respond and support their inquiry.
+Be helpful and wise, but don't overwhelm with too many counter-questions.
+Still use Socratic method, but more gently - ONE optional follow-up question is okay.
+"""

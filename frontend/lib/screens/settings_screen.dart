@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../utils/constants.dart';
 import 'voice_settings_screen.dart';
 import 'notification_settings_screen.dart';
+import 'interaction_mode_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   final String userId;
@@ -32,6 +33,24 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(UIConstants.spacingLG),
         children: [
+          // Interaction Mode
+          _buildSettingsCard(
+            context,
+            title: 'Interaction Mode',
+            subtitle: 'Choose conversation style',
+            icon: Icons.swap_horiz,
+            color: Colors.purple,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => InteractionModeScreen(userId: userId),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: UIConstants.spacingMD),
+
           // Voice Settings
           _buildSettingsCard(
             context,
