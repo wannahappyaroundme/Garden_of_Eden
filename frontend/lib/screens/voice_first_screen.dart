@@ -306,6 +306,7 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
             LoadingOverlay(
               message: appState.loadingMessage!,
               retryAttempt: appState.retryAttempt > 0 ? appState.retryAttempt : null,
+              persona: appState.persona,
             ),
 
           // 7. Pitfall warning banner (top)

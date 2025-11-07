@@ -9,6 +9,7 @@ class LoadingOverlay extends StatelessWidget {
   final int? retryAttempt;
   final int? estimatedSeconds;
   final VoidCallback? onCancel;
+  final PersonaType? persona;
 
   const LoadingOverlay({
     super.key,
@@ -16,7 +17,18 @@ class LoadingOverlay extends StatelessWidget {
     this.retryAttempt,
     this.estimatedSeconds,
     this.onCancel,
+    this.persona,
   });
+
+  /// Get display message with persona name if applicable
+  String get displayMessage {
+    // Replace "AI가 생각하는 중..." with persona-specific message
+    if (persona != null && message.contains('AI가 생각하는 중')) {
+      final personaName = persona!.displayName;
+      return message.replaceAll('AI가 생각하는 중', '$personaName가 생각하는 중');
+    }
+    return message;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +70,7 @@ class LoadingOverlay extends StatelessWidget {
 
               // Loading message
               Text(
-                message,
+                displayMessage,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: UIConstants.fontBodyLarge,
