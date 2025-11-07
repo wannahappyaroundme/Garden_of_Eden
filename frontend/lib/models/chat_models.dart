@@ -261,3 +261,63 @@ class SessionInfo {
     return timeSinceActivity.inMinutes > 8;
   }
 }
+
+/// Streaming Chat Event from SSE
+/// Represents different types of events during streaming response
+class StreamingChatEvent {
+  final StreamingEventType type;
+  final String? textContent;
+  final String? conversationId;
+  final String? audioBase64;
+  final bool? pitfallWarningTriggered;
+  final bool? emotionalSupportMode;
+  final int? processingTimeMs;
+
+  StreamingChatEvent._({
+    required this.type,
+    this.textContent,
+    this.conversationId,
+    this.audioBase64,
+    this.pitfallWarningTriggered,
+    this.emotionalSupportMode,
+    this.processingTimeMs,
+  });
+
+  /// Text chunk event - progressive text as it's generated
+  factory StreamingChatEvent.textChunk({required String content}) {
+    return StreamingChatEvent._(
+      type: StreamingEventType.textChunk,
+      textContent: content,
+    );
+  }
+
+  /// Complete event - final metadata and audio
+  factory StreamingChatEvent.complete({
+    required String conversationId,
+    String? audioBase64,
+    required bool pitfallWarningTriggered,
+    required bool emotionalSupportMode,
+    required int processingTimeMs,
+  }) {
+    return StreamingChatEvent._(
+      type: StreamingEventType.complete,
+      conversationId: conversationId,
+      audioBase64: audioBase64,
+      pitfallWarningTriggered: pitfallWarningTriggered,
+      emotionalSupportMode: emotionalSupportMode,
+      processingTimeMs: processingTimeMs,
+    );
+  }
+
+  /// Check if this is a text chunk event
+  bool get isTextChunk => type == StreamingEventType.textChunk;
+
+  /// Check if this is a complete event
+  bool get isComplete => type == StreamingEventType.complete;
+}
+
+/// Type of streaming event
+enum StreamingEventType {
+  textChunk,
+  complete,
+}

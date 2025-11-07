@@ -3,7 +3,9 @@ library;
 
 import 'dart:io';
 import 'dart:convert';
+import 'dart:async';
 import 'package:dio/dio.dart';
+import 'package:http/http.dart' as http;
 import '../models/chat_models.dart';
 import '../models/goal_models.dart';
 import '../utils/constants.dart';
@@ -139,6 +141,106 @@ class ApiService {
       },
       onRetry: onRetry,
     );
+  }
+
+  /// Send chat message with streaming response (SSE)
+  /// Returns a stream of text chunks and final metadata
+  Stream<StreamingChatEvent> sendChatStream({
+    required String userId,
+    required String message,
+    required PersonaType voiceType,
+    String? sessionId,
+    File? audioFile,
+    List<File>? cameraFrames,
+  }) async* {
+    try {
+      // Prepare multipart request
+      final uri = Uri.parse('${ApiConfig.baseUrl}/api/v2/chat/stream');
+      final request = http.MultipartRequest('POST', uri);
+
+      // Add text fields
+      request.fields['user_id'] = userId;
+      request.fields['message'] = message;
+      request.fields['voice_type'] = voiceType.name;
+      if (sessionId != null) {
+        request.fields['session_id'] = sessionId;
+      }
+
+      // Add audio file if provided
+      if (audioFile != null) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'audio_file',
+          audioFile.path,
+          filename: 'audio.m4a',
+        ));
+      }
+
+      // Add camera frames if provided
+      if (cameraFrames != null && cameraFrames.isNotEmpty) {
+        for (var frame in cameraFrames) {
+          request.files.add(await http.MultipartFile.fromPath(
+            'camera_frames',
+            frame.path,
+            filename: 'frame_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          ));
+        }
+      }
+
+      // Send request and get streaming response
+      final streamedResponse = await request.send();
+
+      if (streamedResponse.statusCode != 200) {
+        final responseBody = await streamedResponse.stream.bytesToString();
+        throw ApiException('서버 오류 (${streamedResponse.statusCode}): $responseBody');
+      }
+
+      // Parse SSE stream
+      String buffer = '';
+      await for (var chunk in streamedResponse.stream.transform(utf8.decoder)) {
+        buffer += chunk;
+
+        // Process complete SSE messages
+        while (buffer.contains('\n\n')) {
+          final endIndex = buffer.indexOf('\n\n');
+          final message = buffer.substring(0, endIndex);
+          buffer = buffer.substring(endIndex + 2);
+
+          // Parse SSE message (format: "data: {...}")
+          if (message.startsWith('data: ')) {
+            final jsonStr = message.substring(6); // Remove "data: " prefix
+            try {
+              final jsonData = jsonDecode(jsonStr) as Map<String, dynamic>;
+              final eventType = jsonData['type'] as String?;
+
+              if (eventType == 'text_chunk') {
+                // Text chunk event
+                yield StreamingChatEvent.textChunk(
+                  content: jsonData['content'] as String,
+                );
+              } else if (eventType == 'complete') {
+                // Complete event with metadata and audio
+                yield StreamingChatEvent.complete(
+                  conversationId: jsonData['conversation_id'] as String,
+                  audioBase64: jsonData['audio_base64'] as String?,
+                  pitfallWarningTriggered: jsonData['pitfall_warning_triggered'] as bool? ?? false,
+                  emotionalSupportMode: jsonData['emotional_support_mode'] as bool? ?? false,
+                  processingTimeMs: jsonData['processing_time_ms'] as int? ?? 0,
+                );
+              } else if (eventType == 'error') {
+                // Error event
+                throw ApiException(jsonData['message'] as String? ?? '알 수 없는 오류');
+              }
+            } catch (e) {
+              if (e is ApiException) rethrow;
+              // Ignore malformed JSON
+            }
+          }
+        }
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('스트리밍 오류: $e');
+    }
   }
 
   /// Transcribe audio file to text (STT)

@@ -14,6 +14,7 @@ import '../widgets/pitfall_warning_banner.dart';
 import '../providers/app_state_provider.dart';
 import '../providers/session_provider.dart';
 import '../providers/service_providers.dart';
+import '../models/chat_models.dart';
 import '../utils/constants.dart';
 import '../utils/page_transitions.dart';
 
@@ -150,42 +151,88 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
         persona: currentState.persona,
       );
 
-      // Send to backend with retry callback
-      final response = await apiService.sendChat(
-        userId: widget.userId,
-        message: message,  // Now contains actual transcription
-        voiceType: currentState.persona,
-        sessionId: sessionId,  // Include session ID
-        cameraFrames: cameraFrames,
-        audioFile: audioFile,
-        onRetry: (attempt, error) {
-          // Update retry state
-          appState.setRetryAttempt(attempt);
-          appState.setLoadingMessage('재시도 중... ($attempt/3)');
-        },
-      );
+      // Stream response from backend
+      String fullResponseText = '';
+      String? finalConversationId;
+      String? finalAudioBase64;
+      bool finalPitfallWarning = false;
+      bool finalEmotionalSupport = false;
 
-      // Increment turn count after successful conversation
-      sessionNotifier.incrementTurnCount();
+      try {
+        final stream = apiService.sendChatStream(
+          userId: widget.userId,
+          message: message,
+          voiceType: currentState.persona,
+          sessionId: sessionId,
+          cameraFrames: cameraFrames,
+          audioFile: audioFile,
+        );
 
-      // Clear loading
-      appState.clearLoadingMessage();
-      appState.setRetryAttempt(0);
+        // Clear loading and switch to streaming mode
+        appState.clearLoadingMessage();
+        appState.setMode(AppMode.responding);
 
-      // Check for pitfall warning
-      if (response.pitfallWarningTriggered) {
-        appState.showPitfall('주의: One Thing에서 벗어나고 있습니다!');
-      }
+        await for (final event in stream) {
+          if (event.isTextChunk) {
+            // Accumulate text chunks
+            fullResponseText += event.textContent!;
 
-      // Update state with response
-      appState.setLastResponse(response);
-      appState.setMode(AppMode.responding);
+            // Update UI with progressive text display
+            // Create temporary response for progressive display
+            final tempResponse = ChatResponse(
+              conversationId: 'streaming',
+              responseText: fullResponseText,
+              responseAudioBase64: null,
+              pitfallWarningTriggered: false,
+              emotionalSupportMode: false,
+              profileUpdated: false,
+              profileVersion: 0,
+              processingTimeMs: 0,
+            );
+            appState.setLastResponse(tempResponse);
+          } else if (event.isComplete) {
+            // Final event with metadata and audio
+            finalConversationId = event.conversationId!;
+            finalAudioBase64 = event.audioBase64;
+            finalPitfallWarning = event.pitfallWarningTriggered ?? false;
+            finalEmotionalSupport = event.emotionalSupportMode ?? false;
 
-      // Play TTS audio
-      if (response.responseAudioBase64 != null) {
-        appState.setTTSPlaying(true);
-        await audioService.playFromBase64(response.responseAudioBase64!);
-        appState.setTTSPlaying(false);
+            // Check for pitfall warning
+            if (finalPitfallWarning) {
+              appState.showPitfall('주의: One Thing에서 벗어나고 있습니다!');
+            }
+
+            // Play TTS audio
+            if (finalAudioBase64 != null) {
+              appState.setTTSPlaying(true);
+              await audioService.playFromBase64(finalAudioBase64);
+              appState.setTTSPlaying(false);
+            }
+          }
+        }
+
+        // Create ChatResponse for compatibility
+        final response = ChatResponse(
+          conversationId: finalConversationId ?? 'unknown',
+          responseText: fullResponseText,
+          responseAudioBase64: finalAudioBase64,
+          pitfallWarningTriggered: finalPitfallWarning,
+          emotionalSupportMode: finalEmotionalSupport,
+          profileUpdated: false,
+          profileVersion: 0,
+          processingTimeMs: 0,
+        );
+
+        // Update state with final response
+        appState.setLastResponse(response);
+
+        // Increment turn count after successful conversation
+        sessionNotifier.incrementTurnCount();
+      } catch (e) {
+        _showError('스트리밍 오류: $e');
+        appState.setMode(AppMode.idle);
+        appState.clearResponse();
+        return;
       }
 
       // Auto-hide response after 3 seconds

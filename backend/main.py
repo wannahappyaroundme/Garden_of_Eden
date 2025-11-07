@@ -4,13 +4,14 @@ FastAPI application with Master Directive system
 """
 import os
 import time
+import json
 from datetime import datetime
 from typing import List, Optional
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -491,6 +492,224 @@ async def chat(
     except Exception as e:
         logger.error(f"Error in chat endpoint: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v2/chat/stream", tags=["Chat"])
+async def chat_stream(
+    user_id: str = Form(...),
+    message: str = Form(""),
+    voice_type: str = Form(...),
+    session_id: Optional[str] = Form(None),
+    camera_frames: List[UploadFile] = File(default=[]),
+    wifi_available: bool = Form(default=False),
+    processor: MasterDirectiveProcessor = Depends(get_master_processor)
+):
+    """
+    Streaming chat endpoint - returns AI response text as SSE stream for faster perceived speed
+    TTS audio is generated and sent at the end of the stream
+
+    Args:
+        user_id: User ID
+        message: User's message text (from STT or typed)
+        voice_type: "adam" or "eve"
+        session_id: Optional session ID for multi-turn
+        camera_frames: Optional camera frames (up to 8)
+        wifi_available: Whether WiFi is connected (enables WebSearch)
+
+    Returns:
+        Server-Sent Events stream with text chunks and final metadata
+    """
+    async def event_generator():
+        try:
+            logger.info(f"Streaming chat request from user {user_id}")
+
+            # Validate persona
+            try:
+                persona = PersonaType(voice_type)
+            except ValueError:
+                yield f"data: {json.dumps({'error': f'Invalid voice_type: {voice_type}. Must be adam or eve'})}\n\n"
+                return
+
+            # Validate message
+            if not message or message.strip() == "":
+                yield f"data: {json.dumps({'error': 'Message cannot be empty'})}\n\n"
+                return
+
+            # Process camera frames
+            images = []
+            if camera_frames and len(camera_frames) > 0:
+                for frame in camera_frames[:8]:
+                    try:
+                        image_bytes = await frame.read()
+                        image = Image.open(io.BytesIO(image_bytes))
+                        images.append(image)
+                    except Exception as e:
+                        logger.warning(f"Failed to process camera frame: {e}")
+
+            # Get all context (profile, RAG, web search, pitfall check) - same as non-streaming
+            import asyncio
+            start_time = datetime.now()
+
+            # Load user profile and recent conversations
+            profile_task = processor.db.get_or_create_profile(user_id)
+
+            # Handle session logic
+            active_session = None
+            if processor.session_manager and session_id:
+                active_session = await processor.session_manager.get_session(session_id)
+                if active_session and not active_session.is_expired():
+                    profile = await profile_task
+                    recent_conversations = processor._build_conversations_from_session(active_session)
+                else:
+                    recent_conversations_task = processor.db.get_recent_conversations(user_id, limit=10)
+                    profile, recent_conversations = await asyncio.gather(profile_task, recent_conversations_task)
+            else:
+                recent_conversations_task = processor.db.get_recent_conversations(user_id, limit=10)
+                profile, recent_conversations = await asyncio.gather(profile_task, recent_conversations_task)
+
+            # RAG semantic search
+            rag_context_string = "No semantic memory retrieved."
+            if processor.rag_service:
+                try:
+                    from models.rag_models import RAGQuery
+                    rag_query = RAGQuery(query_text=message, user_id=user_id, k=5, min_similarity=0.5)
+                    rag_results = await processor.rag_service.search_similar_conversations(rag_query)
+                    if rag_results.retrieved_conversations:
+                        rag_lines = [f"Found {rag_results.total_results} semantically similar past conversations:"]
+                        for i, conv in enumerate(rag_results.retrieved_conversations, 1):
+                            rag_lines.append(f"\n{i}. (Similarity: {conv.similarity_score:.2f}) {conv.created_at.strftime('%Y-%m-%d')}")
+                            rag_lines.append(f"   User: {conv.user_message[:100]}...")
+                            rag_lines.append(f"   AI: {conv.ai_response[:100]}...")
+                        rag_context_string = "\n".join(rag_lines)
+                except Exception as e:
+                    logger.warning(f"RAG search failed: {e}")
+
+            # Web search
+            web_context_string = "No web search performed."
+            if wifi_available and processor.web_search_service:
+                try:
+                    search_decision = processor.web_search_service.should_trigger_search(message)
+                    if search_decision.should_search:
+                        from models.search_models import SearchQuery
+                        search_query = SearchQuery(query_text=message, max_results=3, search_depth="basic")
+                        search_results = await processor.web_search_service.search(search_query)
+                        if search_results.results:
+                            web_context_string = processor.web_search_service.format_search_results_for_prompt(search_results)
+                except Exception as e:
+                    logger.warning(f"WebSearch failed: {e}")
+
+            # Pitfall detection
+            pitfall_check = await processor.pitfall_service.check_for_pitfall(
+                user_message=message,
+                user_profile=profile
+            )
+            pitfall_warning_triggered = pitfall_check.warning_needed
+            pitfall_details = None
+            if pitfall_warning_triggered:
+                pitfall_details = {
+                    "detected_topic": pitfall_check.detected_topic,
+                    "alignment_score": pitfall_check.alignment_score,
+                    "reason": pitfall_check.reason
+                }
+
+            # Emotional support detection
+            emotional_support_mode, emotional_details = processor._detect_emotional_need(
+                message=message,
+                profile=profile
+            )
+
+            # Goal progress context
+            goal_context_string = "No goal tracking info available."
+            goal_progress_context = await processor._check_goal_progress_context(user_id, profile)
+            if goal_progress_context:
+                goal_context_string = goal_progress_context
+
+            # Stream AI response
+            logger.info("🌊 Starting streaming AI response generation...")
+            full_response = ""
+
+            async for text_chunk in processor.llm.generate_response_stream(
+                user_message=message,
+                user_profile=profile,
+                persona=persona,
+                recent_conversations=recent_conversations,
+                camera_frames=images if images else None,
+                pitfall_warning_mode=pitfall_warning_triggered,
+                pitfall_details=pitfall_details,
+                emotional_support_mode=emotional_support_mode,
+                emotional_details=emotional_details,
+                rag_context=rag_context_string,
+                web_context=web_context_string,
+                goal_context=goal_context_string
+            ):
+                full_response += text_chunk
+                # Send text chunk as SSE event
+                yield f"data: {json.dumps({'type': 'text_chunk', 'content': text_chunk})}\n\n"
+
+            logger.info(f"✅ Streaming response completed: {full_response[:100]}...")
+
+            # Generate TTS audio after streaming text is complete
+            logger.info("Generating TTS audio...")
+            audio_base64 = await processor.tts.generate_speech_base64(
+                text=full_response,
+                persona=persona
+            )
+
+            # Save conversation to database
+            from models.conversation import Conversation, ConversationMessage
+            import uuid
+            conversation = Conversation(
+                conversation_id=str(uuid.uuid4()),
+                user_id=user_id,
+                session_id=session_id,
+                persona=persona.value,
+                messages=[
+                    ConversationMessage(role="user", content=message, timestamp=datetime.now()),
+                    ConversationMessage(role="assistant", content=full_response, timestamp=datetime.now())
+                ],
+                pitfall_warning_triggered=pitfall_warning_triggered,
+                pitfall_reason=pitfall_check.reason if pitfall_warning_triggered else None,
+                emotional_support_mode=emotional_support_mode,
+                detected_emotional_state=emotional_details.get('state') if emotional_details else None,
+                main_topic=pitfall_check.detected_topic,
+                topic_alignment_score=pitfall_check.alignment_score
+            )
+            await processor.db.save_conversation(conversation)
+
+            # Add turn to session if active
+            if active_session:
+                await processor.session_manager.add_turn(
+                    session_id=active_session.session_id,
+                    user_message=message,
+                    ai_response=full_response,
+                    processing_time_ms=int((datetime.now() - start_time).total_seconds() * 1000)
+                )
+
+            # Background tasks: RAG embedding + learning
+            if processor.rag_service:
+                asyncio.create_task(processor.rag_service.embed_and_store_conversation(conversation))
+            asyncio.create_task(processor.learning_service.learn_from_conversation(
+                user_id=user_id,
+                conversation=conversation
+            ))
+
+            # Send final event with metadata and audio
+            processing_time = int((datetime.now() - start_time).total_seconds() * 1000)
+            final_event = {
+                'type': 'complete',
+                'conversation_id': conversation.conversation_id,
+                'audio_base64': audio_base64,
+                'pitfall_warning_triggered': pitfall_warning_triggered,
+                'emotional_support_mode': emotional_support_mode,
+                'processing_time_ms': processing_time
+            }
+            yield f"data: {json.dumps(final_event)}\n\n"
+
+        except Exception as e:
+            logger.error(f"Error in streaming chat endpoint: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
 @app.get("/api/v2/profile/{user_id}", response_model=ProfileResponse, tags=["Profile"])
