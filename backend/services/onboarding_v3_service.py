@@ -306,6 +306,55 @@ class OnboardingV3Service:
         """Get active session by ID"""
         return self.active_sessions.get(session_id)
 
+    async def go_back_one_step(self, session_id: str) -> dict:
+        """
+        Go back one step in onboarding
+
+        Args:
+            session_id: Active session ID
+
+        Returns:
+            dict with previous question
+
+        Raises:
+            ValueError: If session not found or already at first step
+        """
+        session = self.active_sessions.get(session_id)
+        if not session:
+            raise ValueError(f"Session {session_id} not found")
+
+        current_step = session["current_step"]
+
+        # Can't go back from first step
+        if current_step <= 1:
+            raise ValueError("Already at first question, cannot go back")
+
+        # Go back one step
+        previous_step = current_step - 1
+        session["current_step"] = previous_step
+
+        # Remove the response for the current step (the one we're going back from)
+        if current_step in session["responses"]:
+            del session["responses"][current_step]
+
+        # If going back from a later step, mark as not completed
+        session["completed"] = False
+
+        # Get the question for the previous step
+        previous_question = get_question_v3(previous_step, session["context"])
+
+        logger.info(f"Session {session_id}: Went back from step {current_step} to step {previous_step}")
+
+        return {
+            "completed": False,
+            "question": previous_question["question_kr"],
+            "question_type": previous_question["type"],
+            "options": previous_question.get("options"),
+            "step": previous_step,
+            "total_steps": 6,
+            "message": "Previous question"
+        }
+
     async def delete_session(self, session_id: str):
         """Delete onboarding session"""
         if session_id in self.active_sessions:

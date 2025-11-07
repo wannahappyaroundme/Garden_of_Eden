@@ -735,6 +735,45 @@ async def get_onboarding_status(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class OnboardingBackRequest(BaseModel):
+    session_id: str
+
+
+@app.post("/api/v2/onboarding/back", tags=["Onboarding"])
+async def go_back_onboarding(
+    request: OnboardingBackRequest,
+    onboarding_v3: OnboardingV3Service = Depends(get_onboarding_v3_service)
+):
+    """
+    Go back one step in onboarding
+
+    Args:
+        request: OnboardingBackRequest with session_id
+
+    Returns:
+        Previous question data
+
+    Raises:
+        404: Session not found
+        400: Already at first question
+    """
+    try:
+        result = await onboarding_v3.go_back_one_step(request.session_id)
+        return result
+
+    except ValueError as e:
+        error_msg = str(e)
+        if "not found" in error_msg:
+            raise HTTPException(status_code=404, detail=error_msg)
+        elif "first question" in error_msg or "cannot go back" in error_msg:
+            raise HTTPException(status_code=400, detail=error_msg)
+        else:
+            raise HTTPException(status_code=400, detail=error_msg)
+    except Exception as e:
+        logger.error(f"Error going back in onboarding: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ==================== Session Management Endpoints ====================
 
 @app.post("/api/v2/session/create", tags=["Session"])
