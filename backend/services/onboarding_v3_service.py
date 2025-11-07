@@ -52,7 +52,7 @@ class OnboardingV3Service:
             "user_id": user_id,
             "persona": persona,
             "current_step": 1,
-            "total_steps": 6,
+            "total_steps": 7,
             "responses": {},  # step -> response data
             "context": {},  # Additional context (like user name)
             "started_at": datetime.now().isoformat(),
@@ -72,7 +72,7 @@ class OnboardingV3Service:
             "question_type": first_question["type"],
             "options": first_question.get("options"),  # For multiple choice
             "step": 1,
-            "total_steps": 6
+            "total_steps": 7
         }
 
     async def process_response(
@@ -113,10 +113,14 @@ class OnboardingV3Service:
         }
 
         # Handle different question types
-        if current_question["type"] == "personal_info":
-            # Extract name
+        if current_question["type"] == "text_input":
+            # Extract name from text input
             session["context"]["name"] = user_response.strip()
             response_data["extracted"] = {"name": user_response.strip()}
+
+        elif current_question["type"] == "voice":
+            # Store voice response for daily check-in
+            response_data["voice_response"] = user_response
 
         elif current_question["type"] == "multiple_choice" and selected_option:
             # Find selected option details
@@ -135,7 +139,7 @@ class OnboardingV3Service:
         # Move to next step
         next_step = current_step + 1
 
-        if next_step <= 6:
+        if next_step <= 7:
             # Get next question
             session["current_step"] = next_step
             next_question = get_question_v3(next_step, session["context"])
@@ -146,7 +150,7 @@ class OnboardingV3Service:
                 "question_type": next_question["type"],
                 "options": next_question.get("options"),
                 "step": next_step,
-                "total_steps": 6
+                "total_steps": 7
             }
         else:
             # All questions answered - extract profile
@@ -239,17 +243,18 @@ class OnboardingV3Service:
         """Fallback rule-based profile extraction if LLM fails"""
         responses = session["responses"]
 
-        # Extract from structured responses
+        # Extract from structured responses (updated step numbers after adding daily check-in)
         profile = {
             "personal_info": {
                 "name": session["context"].get("name", "User"),
                 "preferred_language": "ko"
             },
-            "one_thing": responses.get(5, {}).get("response", "개인 성장"),
-            "core_pitfall": responses.get(6, {}).get("response", "불명확"),
-            "thinking_style": responses.get(2, {}).get("selected_option", {}).get("value", "analytical"),
-            "motivation_style": responses.get(3, {}).get("selected_option", {}).get("value", "growth"),
-            "resilience_style": responses.get(4, {}).get("selected_option", {}).get("value", "problem_solver"),
+            "daily_check_in": responses.get(2, {}).get("response", ""),
+            "one_thing": responses.get(6, {}).get("response", "개인 성장"),
+            "core_pitfall": responses.get(7, {}).get("response", "불명확"),
+            "thinking_style": responses.get(3, {}).get("selected_option", {}).get("value", "analytical"),
+            "motivation_style": responses.get(4, {}).get("selected_option", {}).get("value", "growth"),
+            "resilience_style": responses.get(5, {}).get("selected_option", {}).get("value", "problem_solver"),
             "initial_persona_mode": "mentor",
             "persona_evolution_readiness": 0.3,
             "summary": "Profile created from onboarding V3"
@@ -351,7 +356,7 @@ class OnboardingV3Service:
             "question_type": previous_question["type"],
             "options": previous_question.get("options"),
             "step": previous_step,
-            "total_steps": 6,
+            "total_steps": 7,
             "message": "Previous question"
         }
 

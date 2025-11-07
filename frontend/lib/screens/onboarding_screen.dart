@@ -27,6 +27,7 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   bool _isRecording = false;
+  final TextEditingController _textController = TextEditingController();
 
   @override
   void initState() {
@@ -37,6 +38,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   void dispose() {
+    _textController.dispose();
     _disposeServices();
     super.dispose();
   }
@@ -161,6 +163,36 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
   }
 
+  Future<void> _submitTextResponse() async {
+    try {
+      final textResponse = _textController.text.trim();
+
+      if (textResponse.isEmpty) {
+        _showError('이름을 입력해주세요');
+        return;
+      }
+
+      final onboarding = ref.read(onboardingProvider.notifier);
+
+      // Send text response to backend
+      await onboarding.respondToQuestion(textResponse);
+
+      // Clear text field
+      _textController.clear();
+
+      // Check if onboarding completed
+      final state = ref.read(onboardingProvider);
+      if (state.isCompleted && state.userId != null) {
+        _navigateToMainScreen(state.userId!);
+      } else if (state.currentQuestion != null) {
+        // Play next question via TTS
+        _playQuestionTTS(state.currentQuestion!);
+      }
+    } catch (e) {
+      _showError('오류: $e');
+    }
+  }
+
   Future<void> _cleanupTempFile(File file) async {
     try {
       if (await file.exists()) {
@@ -257,10 +289,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     onboardingState.currentOptions != null)
                   _buildMultipleChoiceOptions(onboardingState.currentOptions!),
 
+                // Text input field (for text_input type)
+                if (onboardingState.currentQuestionType == 'text_input')
+                  _buildTextInputField(),
+
                 const Spacer(),
 
-                // Push-to-talk button (for open-ended questions)
-                if (onboardingState.currentQuestionType != 'multiple_choice')
+                // Push-to-talk button (for voice and open-ended questions)
+                if (onboardingState.currentQuestionType != 'multiple_choice' &&
+                    onboardingState.currentQuestionType != 'text_input')
                   PushToTalkButton(
                     mode: _isRecording ? AppMode.listening : AppMode.idle,
                     onPressStart: _startRecording,
@@ -371,6 +408,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _buildQuestionDisplay(String question) {
+    final onboardingState = ref.watch(onboardingProvider);
+    final questionType = onboardingState.currentQuestionType;
+
+    // Determine hint text based on question type
+    String hintText;
+    if (questionType == 'text_input') {
+      hintText = '아래에 입력해주세요';
+    } else if (questionType == 'multiple_choice') {
+      hintText = '옵션을 선택해주세요';
+    } else {
+      hintText = '버튼을 길게 눌러 답변해주세요';
+    }
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: const EdgeInsets.all(24),
@@ -401,7 +451,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            '버튼을 길게 눌러 답변해주세요',
+            hintText,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.6),
               fontSize: UIConstants.fontCaption,
@@ -462,6 +512,83 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildTextInputField() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(UIConstants.electricCyan).withValues(alpha: 0.5),
+          width: 2,
+        ),
+      ),
+      child: Column(
+        children: [
+          TextField(
+            controller: _textController,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: UIConstants.fontBodyLarge,
+            ),
+            decoration: InputDecoration(
+              hintText: '이름을 입력하세요',
+              hintStyle: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: UIConstants.fontBody,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.3),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.3),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: Color(UIConstants.electricCyan),
+                  width: 2,
+                ),
+              ),
+            ),
+            textAlign: TextAlign.center,
+            autofocus: true,
+            onSubmitted: (_) => _submitTextResponse(),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _submitTextResponse,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(UIConstants.electricCyan),
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 48,
+                vertical: 16,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              '다음',
+              style: TextStyle(
+                fontSize: UIConstants.fontBody,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -7,7 +7,7 @@ Redesigned system with structured personality assessment
 ONBOARDING_V3_QUESTIONS = [
     {
         "step": 1,
-        "type": "personal_info",
+        "type": "text_input",
         "question_kr": "안녕하세요! 저는 당신의 AI 멘토입니다. 먼저, 이름을 알려주시겠어요?",
         "question_en": "Hello! I'm your AI mentor. First, may I know your name?",
         "purpose": "Collect user's name for personalization",
@@ -16,6 +16,15 @@ ONBOARDING_V3_QUESTIONS = [
     },
     {
         "step": 2,
+        "type": "voice",
+        "question_kr": "반갑습니다! 오늘 하루는 어땠나요?",
+        "question_en": "Nice to meet you! How was your day today?",
+        "purpose": "Build initial rapport and understand current state",
+        "field": "daily_check_in",
+        "validation": "optional"
+    },
+    {
+        "step": 3,
         "type": "multiple_choice",
         "question_kr": "{name}님, 반갑습니다! 문제를 해결할 때, 당신은 어떤 스타일인가요?",
         "question_en": "Nice to meet you, {name}! When solving problems, what's your style?",
@@ -53,7 +62,7 @@ ONBOARDING_V3_QUESTIONS = [
         ]
     },
     {
-        "step": 3,
+        "step": 4,
         "type": "multiple_choice",
         "question_kr": "동기부여에 대해 물어볼게요. 당신이 가장 힘을 받는 순간은 언제인가요?",
         "question_en": "About motivation - when do you feel most energized?",
@@ -91,7 +100,7 @@ ONBOARDING_V3_QUESTIONS = [
         ]
     },
     {
-        "step": 4,
+        "step": 5,
         "type": "multiple_choice",
         "question_kr": "어려운 상황에 직면했을 때, 당신은 주로 어떻게 반응하나요?",
         "question_en": "When facing difficulties, how do you typically respond?",
@@ -129,7 +138,7 @@ ONBOARDING_V3_QUESTIONS = [
         ]
     },
     {
-        "step": 5,
+        "step": 6,
         "type": "open_ended",
         "question_kr": "이제 본질적인 질문을 드릴게요. 요즘 당신에게 가장 중요한 한 가지는 무엇인가요? 이루고 싶은 목표나 집중하고 싶은 것을 자유롭게 말씀해주세요.",
         "question_en": "Now for the essential question. What's the ONE thing that matters most to you right now? Feel free to share your goal or what you want to focus on.",
@@ -142,7 +151,7 @@ ONBOARDING_V3_QUESTIONS = [
         ]
     },
     {
-        "step": 6,
+        "step": 7,
         "type": "open_ended",
         "question_kr": "마지막 질문입니다. 그 목표를 향해 나아가는 데 있어서 가장 큰 장애물이나 어려움은 무엇인가요?",
         "question_en": "Final question. What's the biggest obstacle or challenge preventing you from moving toward that goal?",
@@ -284,7 +293,7 @@ Extract and return in JSON format:
 }}
 
 Use the trait mappings from the multiple choice options.
-Calculate learning preferences by combining selections from steps 2, 3, 4.
+Calculate learning preferences by combining selections from steps 3, 4, 5.
 Determine initial_persona_mode based on user's responses and needs."""
 
 
@@ -293,7 +302,7 @@ def get_question_v3(step: int, context: dict = None) -> dict:
     Get onboarding V3 question by step
 
     Args:
-        step: Question step number (1-6)
+        step: Question step number (1-7)
         context: Optional context like user's name for personalization
 
     Returns:
