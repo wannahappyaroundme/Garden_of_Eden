@@ -22,7 +22,7 @@ class _VoiceSettingsScreenState extends ConsumerState<VoiceSettingsScreen> {
   bool _isLoading = true;
   bool _isSaving = false;
 
-  String _selectedVoice = 'default';
+  String _selectedVoice = 'Neural2-C';  // Default to Adam's voice
   PersonaType _voiceGender = PersonaType.adam;  // Adam (male) or Eve (female)
   double _speed = 1.0;
   double _pitch = 1.0;
@@ -34,11 +34,14 @@ class _VoiceSettingsScreenState extends ConsumerState<VoiceSettingsScreen> {
   int _formality = 2;
   int _encouragement = 4;
 
-  final Map<String, String> _availableVoices = {
-    'default': 'Default',
-    'female_gentle': 'Gentle Female',
-    'male_confident': 'Confident Male',
-    'neutral_calm': 'Calm Neutral',
+  // Google Cloud TTS Neural2 Korean voices
+  final Map<String, String> _adamVoices = {
+    'Neural2-C': 'Adam (Deep, Stable)',
+  };
+
+  final Map<String, String> _eveVoices = {
+    'Neural2-A': 'Eve - Bright & Friendly',
+    'Neural2-B': 'Eve - Soft & Calm',
   };
 
   @override
@@ -220,6 +223,8 @@ class _VoiceSettingsScreenState extends ConsumerState<VoiceSettingsScreen> {
               onTap: () {
                 setState(() {
                   _voiceGender = PersonaType.adam;
+                  // Set default Adam voice when switching
+                  _selectedVoice = 'Neural2-C';
                 });
               },
               child: Container(
@@ -266,6 +271,8 @@ class _VoiceSettingsScreenState extends ConsumerState<VoiceSettingsScreen> {
               onTap: () {
                 setState(() {
                   _voiceGender = PersonaType.eve;
+                  // Set default Eve voice when switching (Neural2-A bright)
+                  _selectedVoice = 'Neural2-A';
                 });
               },
               child: Container(
@@ -312,13 +319,16 @@ class _VoiceSettingsScreenState extends ConsumerState<VoiceSettingsScreen> {
   }
 
   Widget _buildVoiceSelector() {
+    // Choose voice map based on selected gender
+    final voiceMap = _voiceGender == PersonaType.adam ? _adamVoices : _eveVoices;
+
     return Container(
       decoration: BoxDecoration(
         color: const Color(UIConstants.darkGrey),
         borderRadius: BorderRadius.circular(UIConstants.spacingMD),
       ),
       child: Column(
-        children: _availableVoices.entries.map((entry) {
+        children: voiceMap.entries.map((entry) {
           return RadioListTile<String>(
             value: entry.key,
             groupValue: _selectedVoice,
@@ -331,11 +341,31 @@ class _VoiceSettingsScreenState extends ConsumerState<VoiceSettingsScreen> {
               entry.value,
               style: const TextStyle(color: Colors.white),
             ),
+            subtitle: _voiceGender == PersonaType.eve
+                ? Text(
+                    _getVoiceDescription(entry.key),
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.6),
+                      fontSize: UIConstants.fontCaption,
+                    ),
+                  )
+                : null,
             activeColor: const Color(UIConstants.electricCyan),
           );
         }).toList(),
       ),
     );
+  }
+
+  String _getVoiceDescription(String voiceCode) {
+    switch (voiceCode) {
+      case 'Neural2-A':
+        return 'Energetic and warm tone, perfect for encouragement';
+      case 'Neural2-B':
+        return 'Gentle and soothing tone, ideal for reflection';
+      default:
+        return '';
+    }
   }
 
   Widget _buildVoiceParameters() {

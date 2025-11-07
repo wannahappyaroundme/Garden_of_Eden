@@ -15,16 +15,22 @@ logger = get_logger(__name__)
 
 # Voice mapping for personas using Google Cloud Neural2 Voices
 # Adam: Masculine voice (Neural2-C)
-# Eve: Feminine voice (Neural2-A)
+# Eve: Feminine voices (Neural2-A bright, Neural2-B soft)
 GOOGLE_TTS_VOICES = {
     PersonaType.ADAM: {
-        "name": "ko-KR-Neural2-C",  # Male voice for Adam
+        "name": "ko-KR-Neural2-C",  # Male voice for Adam (deep, stable)
         "gender": texttospeech.SsmlVoiceGender.MALE
     },
     PersonaType.EVE: {
-        "name": "ko-KR-Neural2-A",  # Female voice for Eve
+        "name": "ko-KR-Neural2-A",  # Female voice for Eve (default: bright, friendly)
         "gender": texttospeech.SsmlVoiceGender.FEMALE
     }
+}
+
+# Eve voice variants
+EVE_VOICE_VARIANTS = {
+    "Neural2-A": "ko-KR-Neural2-A",  # Bright & Friendly
+    "Neural2-B": "ko-KR-Neural2-B",  # Soft & Calm
 }
 
 
@@ -46,7 +52,8 @@ class TTSService:
         text: str,
         persona: PersonaType,
         output_path: Optional[str] = None,
-        max_retries: int = 3
+        max_retries: int = 3,
+        voice_variant: Optional[str] = None
     ) -> Optional[str]:
         """
         Generate speech from text using Google Cloud TTS neural voices
@@ -56,6 +63,7 @@ class TTSService:
             persona: Adam or Eve (determines voice - masculine vs feminine)
             output_path: Optional path to save audio file. If None, uses temp path
             max_retries: Maximum number of retry attempts (default: 3)
+            voice_variant: Optional voice variant code (e.g., "Neural2-A", "Neural2-B" for Eve)
 
         Returns:
             Path to generated audio file or None if error
@@ -65,7 +73,12 @@ class TTSService:
             return None
 
         # Select voice based on persona
-        voice_config = GOOGLE_TTS_VOICES.get(persona, GOOGLE_TTS_VOICES[PersonaType.ADAM])
+        voice_config = GOOGLE_TTS_VOICES.get(persona, GOOGLE_TTS_VOICES[PersonaType.ADAM]).copy()
+
+        # Override with voice variant if provided (for Eve)
+        if persona == PersonaType.EVE and voice_variant and voice_variant in EVE_VOICE_VARIANTS:
+            voice_config["name"] = EVE_VOICE_VARIANTS[voice_variant]
+            logger.info(f"Using Eve voice variant: {voice_variant} ({voice_config['name']})")
 
         # Generate output path if not provided
         if output_path is None:
@@ -125,7 +138,8 @@ class TTSService:
     async def generate_speech_base64(
         self,
         text: str,
-        persona: PersonaType
+        persona: PersonaType,
+        voice_variant: Optional[str] = None
     ) -> Optional[str]:
         """
         Generate speech and return as base64 string
@@ -133,13 +147,14 @@ class TTSService:
         Args:
             text: Text to convert to speech
             persona: Adam or Eve
+            voice_variant: Optional voice variant code for Eve
 
         Returns:
             Base64 encoded audio or None if error
         """
         try:
             # Generate audio file first
-            audio_path = await self.generate_speech(text, persona)
+            audio_path = await self.generate_speech(text, persona, voice_variant=voice_variant)
 
             if not audio_path:
                 return None
@@ -166,17 +181,30 @@ class TTSService:
         """Get list of available Korean voices"""
         return [
             {
-                "Name": "Neural2-C (Adam)",
+                "Name": "Adam (Deep, Stable)",
                 "Voice": "ko-KR-Neural2-C",
+                "VoiceCode": "Neural2-C",
                 "Locale": "ko-KR",
                 "Gender": "Male",
-                "Persona": "Adam"
+                "Persona": "Adam",
+                "Description": "Masculine voice with deep and stable tone"
             },
             {
-                "Name": "Neural2-A (Eve)",
+                "Name": "Eve - Bright & Friendly",
                 "Voice": "ko-KR-Neural2-A",
+                "VoiceCode": "Neural2-A",
                 "Locale": "ko-KR",
                 "Gender": "Female",
-                "Persona": "Eve"
+                "Persona": "Eve",
+                "Description": "Energetic and warm tone, perfect for encouragement"
+            },
+            {
+                "Name": "Eve - Soft & Calm",
+                "Voice": "ko-KR-Neural2-B",
+                "VoiceCode": "Neural2-B",
+                "Locale": "ko-KR",
+                "Gender": "Female",
+                "Persona": "Eve",
+                "Description": "Gentle and soothing tone, ideal for reflection"
             }
         ]
