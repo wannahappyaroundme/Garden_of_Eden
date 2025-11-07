@@ -621,19 +621,19 @@ class ApiService {
 
   // ==================== Notification Settings ====================
 
-  /// Get notification settings for user
+  /// Get notification preferences for user
   Future<Map<String, dynamic>> getNotificationSettings(String userId) async {
     return await _retryableRequest(
       request: () async {
         final response = await _dio.get(
-          '${ApiConfig.notificationSettingsEndpoint}/$userId/settings',
+          '${ApiConfig.notificationSettingsEndpoint}/$userId/preferences',
         );
         return response.data as Map<String, dynamic>;
       },
     );
   }
 
-  /// Update notification settings for user
+  /// Update notification preferences for user
   Future<void> updateNotificationSettings(
     String userId,
     Map<String, dynamic> settings,
@@ -641,7 +641,7 @@ class ApiService {
     return await _retryableRequest(
       request: () async {
         await _dio.put(
-          '${ApiConfig.notificationSettingsEndpoint}/$userId/settings',
+          '${ApiConfig.notificationSettingsEndpoint}/$userId/preferences',
           data: settings,
         );
       },

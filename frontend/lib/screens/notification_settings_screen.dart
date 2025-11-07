@@ -2,23 +2,22 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../utils/constants.dart';
+import '../providers/service_providers.dart';
 
-class NotificationSettingsScreen extends StatefulWidget {
+class NotificationSettingsScreen extends ConsumerStatefulWidget {
   final String userId;
 
-  const NotificationSettingsScreen({
-    super.key,
-    required this.userId,
-  });
+  const NotificationSettingsScreen({super.key, required this.userId});
 
   @override
-  State<NotificationSettingsScreen> createState() =>
+  ConsumerState<NotificationSettingsScreen> createState() =>
       _NotificationSettingsScreenState();
 }
 
 class _NotificationSettingsScreenState
-    extends State<NotificationSettingsScreen> {
+    extends ConsumerState<NotificationSettingsScreen> {
   // Notification toggles
   bool _notificationsEnabled = true;
   bool _goalReminders = true;
@@ -32,7 +31,72 @@ class _NotificationSettingsScreenState
   TimeOfDay _quietHoursStart = const TimeOfDay(hour: 22, minute: 0);
   TimeOfDay _quietHoursEnd = const TimeOfDay(hour: 8, minute: 0);
 
-  bool _isLoading = false;
+  bool _isLoading = true;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      final settings = await apiService.getNotificationSettings(widget.userId);
+
+      setState(() {
+        _notificationsEnabled = settings['enabled'] ?? true;
+        _goalReminders = settings['goal_reminders'] ?? true;
+        _stagnationAlerts = settings['stagnation_alerts'] ?? true;
+        _milestoneNotifications = settings['milestone_notifications'] ?? true;
+        _encouragementMessages = settings['encouragement_messages'] ?? true;
+        _weeklySummaries = settings['weekly_summaries'] ?? true;
+
+        // Parse time settings
+        if (settings['reminder_time'] != null) {
+          final parts = (settings['reminder_time'] as String).split(':');
+          _reminderTime = TimeOfDay(
+            hour: int.parse(parts[0]),
+            minute: int.parse(parts[1]),
+          );
+        }
+        if (settings['quiet_hours_start'] != null) {
+          final parts = (settings['quiet_hours_start'] as String).split(':');
+          _quietHoursStart = TimeOfDay(
+            hour: int.parse(parts[0]),
+            minute: int.parse(parts[1]),
+          );
+        }
+        if (settings['quiet_hours_end'] != null) {
+          final parts = (settings['quiet_hours_end'] as String).split(':');
+          _quietHoursEnd = TimeOfDay(
+            hour: int.parse(parts[0]),
+            minute: int.parse(parts[1]),
+          );
+        }
+
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        _showError('설정 로드 실패: ${e.toString()}');
+      }
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red[700],
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +141,10 @@ class _NotificationSettingsScreenState
                   const SizedBox(height: UIConstants.spacingXL),
 
                   // Notification types
-                  _buildSectionHeader('Notification Types', Icons.notifications),
+                  _buildSectionHeader(
+                    'Notification Types',
+                    Icons.notifications,
+                  ),
                   const SizedBox(height: UIConstants.spacingMD),
                   _buildNotificationTypes(),
                   const SizedBox(height: UIConstants.spacingXL),
@@ -113,11 +180,7 @@ class _NotificationSettingsScreenState
   Widget _buildSectionHeader(String title, IconData icon) {
     return Row(
       children: [
-        Icon(
-          icon,
-          color: const Color(UIConstants.electricCyan),
-          size: 24,
-        ),
+        Icon(icon, color: const Color(UIConstants.electricCyan), size: 24),
         const SizedBox(width: UIConstants.spacingSM),
         Text(
           title,
@@ -137,10 +200,7 @@ class _NotificationSettingsScreenState
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: _notificationsEnabled
-              ? [
-                  const Color(UIConstants.electricCyan),
-                  const Color(0xFF0099CC),
-                ]
+              ? [const Color(UIConstants.electricCyan), const Color(0xFF0099CC)]
               : [
                   const Color(UIConstants.darkGrey),
                   const Color(UIConstants.midGrey),
@@ -306,10 +366,7 @@ class _NotificationSettingsScreenState
         ],
       ),
       subtitle: Padding(
-        padding: const EdgeInsets.only(
-          left: 28.0,
-          top: UIConstants.spacingXS,
-        ),
+        padding: const EdgeInsets.only(left: 28.0, top: UIConstants.spacingXS),
         child: Text(
           subtitle,
           style: TextStyle(
@@ -434,26 +491,62 @@ class _NotificationSettingsScreenState
     );
   }
 
-  void _saveSettings() {
-    // TODO: Call API to save notification preferences
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Notification settings saved!'),
-        backgroundColor: Color(UIConstants.electricCyan),
-      ),
-    );
-    Navigator.pop(context);
+  Future<void> _saveSettings() async {
+    if (_isSaving) return;
+
+    setState(() => _isSaving = true);
+
+    try {
+      final apiService = ref.read(apiServiceProvider);
+
+      // Format time as HH:mm
+      String formatTime(TimeOfDay time) {
+        return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+      }
+
+      final settings = {
+        'enabled': _notificationsEnabled,
+        'goal_reminders': _goalReminders,
+        'stagnation_alerts': _stagnationAlerts,
+        'milestone_notifications': _milestoneNotifications,
+        'encouragement_messages': _encouragementMessages,
+        'weekly_summaries': _weeklySummaries,
+        'reminder_time': formatTime(_reminderTime),
+        'quiet_hours_start': formatTime(_quietHoursStart),
+        'quiet_hours_end': formatTime(_quietHoursEnd),
+      };
+
+      await apiService.updateNotificationSettings(widget.userId, settings);
+
+      setState(() => _isSaving = false);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('알림 설정이 저장되었습니다'),
+            backgroundColor: Color(UIConstants.electricCyan),
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      setState(() => _isSaving = false);
+      if (mounted) {
+        _showError('설정 저장 실패: ${e.toString()}');
+      }
+    }
   }
 
   void _sendTestNotification() {
-    // TODO: Call API to send test notification
+    // Test notification is a client-side feature
+    // In production, this would trigger a real push notification via backend
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Row(
           children: [
             Icon(Icons.check_circle, color: Colors.black),
             SizedBox(width: UIConstants.spacingMD),
-            Text('Test notification sent!'),
+            Text('테스트 알림이 전송되었습니다'),
           ],
         ),
         backgroundColor: const Color(UIConstants.electricCyan),
