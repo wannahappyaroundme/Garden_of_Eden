@@ -28,6 +28,7 @@ class ApiConfig {
   static const String onboardingStartEndpoint = '/api/v2/onboarding/start';
   static const String onboardingRespondEndpoint = '/api/v2/onboarding/respond';
   static const String onboardingStatusEndpoint = '/api/v2/onboarding/status';
+  static const String onboardingBackEndpoint = '/api/v2/onboarding/back';
 
   // Session endpoints
   static const String sessionCreateEndpoint = '/api/v2/session/create';

@@ -265,6 +265,24 @@ class ApiService {
     );
   }
 
+  /// Go back one step in onboarding
+  Future<OnboardingResponse> goBackOnboarding({
+    required String sessionId,
+  }) async {
+    return _retryableRequest<OnboardingResponse>(
+      request: () async {
+        final response = await _dio.post(
+          ApiConfig.onboardingBackEndpoint,
+          data: {
+            'session_id': sessionId,
+          },
+        );
+
+        return OnboardingResponse.fromJson(response.data as Map<String, dynamic>);
+      },
+    );
+  }
+
   // ========== Session API Methods ==========
 
   /// Create new conversation session

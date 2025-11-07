@@ -199,6 +199,41 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
     await respondToQuestion(selectedLabel);
   }
 
+  /// Go back one step in onboarding
+  Future<void> goBackOneStep() async {
+    if (state.sessionId == null || state.sessionId!.isEmpty) {
+      state = state.copyWith(errorMessage: '세션 ID가 없습니다');
+      return;
+    }
+
+    // Can't go back from first step
+    if (state.currentStep <= 1) {
+      state = state.copyWith(errorMessage: '첫 번째 질문에서는 뒤로 갈 수 없습니다');
+      return;
+    }
+
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    try {
+      final response = await _apiService.goBackOnboarding(
+        sessionId: state.sessionId!,
+      );
+
+      state = state.copyWith(
+        currentStep: response.step ?? state.currentStep - 1,
+        currentQuestion: response.question ?? '이전 질문을 불러오는 중...',
+        currentQuestionType: response.questionType,
+        currentOptions: response.options,
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: '이전 질문으로 돌아가기 실패: ${e.toString()}',
+      );
+    }
+  }
+
   /// Resume existing session
   Future<void> _resumeSession(String sessionId) async {
     state = state.copyWith(isLoading: true, clearError: true);

@@ -207,6 +207,32 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           SafeArea(
             child: Column(
               children: [
+                // Top bar with back button and progress
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      // Back button (disabled on first step)
+                      IconButton(
+                        onPressed: onboardingState.currentStep > 1 && !onboardingState.isLoading
+                            ? () async {
+                                final onboarding = ref.read(onboardingProvider.notifier);
+                                await onboarding.goBackOneStep();
+                              }
+                            : null,
+                        icon: Icon(
+                          Icons.arrow_back,
+                          color: onboardingState.currentStep > 1 && !onboardingState.isLoading
+                              ? const Color(UIConstants.electricCyan)
+                              : Colors.grey,
+                        ),
+                        iconSize: 28,
+                      ),
+                      const Spacer(),
+                    ],
+                  ),
+                ),
+
                 // Progress indicator
                 _buildProgressIndicator(
                   onboardingState.currentStep,
