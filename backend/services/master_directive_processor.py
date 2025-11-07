@@ -115,25 +115,32 @@ class MasterDirectiveProcessor:
         try:
             logger.info(f"Processing conversation for user {user_id} with persona {voice_type.value}")
 
-            # 1. Load user profile
-            profile = await self.db.get_or_create_profile(user_id)
+            # 1 & 2. Load user profile and conversation context IN PARALLEL
+            import asyncio
 
-            # 2. Get or create session and load conversation context
+            # Prepare tasks for parallel execution
+            profile_task = self.db.get_or_create_profile(user_id)
+
+            # Handle session logic
             active_session = None
             if self.session_manager and session_id:
                 # Try to get existing session
                 active_session = await self.session_manager.get_session(session_id)
                 if active_session and not active_session.is_expired():
                     logger.info(f"Using active session {session_id} with {len(active_session.turns)} turns")
-                    # Build recent conversations from session turns
+                    # Build recent conversations from session turns (synchronous)
+                    recent_conversations_task = asyncio.create_task(asyncio.sleep(0))  # No-op task
+                    profile = await profile_task
                     recent_conversations = self._build_conversations_from_session(active_session)
                 else:
-                    # Session expired or not found, load from DB
+                    # Session expired or not found, load from DB in parallel with profile
                     logger.info("Session expired or not found, loading from database")
-                    recent_conversations = await self.db.get_recent_conversations(user_id, limit=10)
+                    recent_conversations_task = self.db.get_recent_conversations(user_id, limit=10)
+                    profile, recent_conversations = await asyncio.gather(profile_task, recent_conversations_task)
             else:
-                # No session manager or session_id, load from DB
-                recent_conversations = await self.db.get_recent_conversations(user_id, limit=10)
+                # No session manager or session_id, load both from DB in parallel
+                recent_conversations_task = self.db.get_recent_conversations(user_id, limit=10)
+                profile, recent_conversations = await asyncio.gather(profile_task, recent_conversations_task)
 
             # 3. RAG: Semantic search for similar past conversations
             rag_context_string = "No semantic memory retrieved."
@@ -297,18 +304,22 @@ class MasterDirectiveProcessor:
                 )
                 logger.info(f"Added turn to session {active_session.session_id}")
 
-            # 8.6. Embed conversation for RAG (semantic memory)
-            if self.rag_service:
-                try:
-                    await self.rag_service.embed_and_store_conversation(conversation)
-                    logger.info("✅ Conversation embedded for RAG")
-                except Exception as e:
-                    logger.warning(f"⚠️ Failed to embed conversation for RAG: {e}")
-
-            # 9. Learn from conversation (background task - don't wait for response)
-            # Fire and forget - learning happens in background
-            logger.info("Starting learning pipeline in background...")
+            # 8.6 & 9. RAG embedding and learning in background (fire-and-forget)
+            logger.info("Starting background tasks (RAG embedding + learning)...")
             import asyncio
+
+            # RAG embedding in background
+            if self.rag_service:
+                async def embed_in_background():
+                    try:
+                        await self.rag_service.embed_and_store_conversation(conversation)
+                        logger.info("✅ Conversation embedded for RAG")
+                    except Exception as e:
+                        logger.warning(f"⚠️ Failed to embed conversation for RAG: {e}")
+
+                asyncio.create_task(embed_in_background())
+
+            # Learning in background
             asyncio.create_task(self.learning_service.learn_from_conversation(
                 user_id=user_id,
                 conversation=conversation

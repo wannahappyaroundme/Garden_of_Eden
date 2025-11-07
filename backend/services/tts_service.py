@@ -1,9 +1,9 @@
 """
-Text-to-Speech Service using Google TTS (gTTS)
-FREE and unlimited, supports high-quality Korean voices
+Text-to-Speech Service using Edge TTS
+FREE, high-quality neural voices with Adam/Eve persona distinction
 """
 import os
-from gtts import gTTS
+import edge_tts
 from pathlib import Path
 import base64
 from typing import Optional
@@ -14,20 +14,21 @@ from utils.constants import PersonaType
 
 logger = get_logger(__name__)
 
-# Voice mapping for personas
-# gTTS doesn't have different voice options for Korean, but we can use different speeds
-GTTS_VOICES = {
-    PersonaType.ADAM: {"lang": "ko", "slow": False},  # Normal speed for Adam
-    PersonaType.EVE: {"lang": "ko", "slow": False}     # Normal speed for Eve
+# Voice mapping for personas using Microsoft Edge Neural Voices
+# Adam: Masculine voice (InJoon)
+# Eve: Feminine voice (SunHi)
+EDGE_TTS_VOICES = {
+    PersonaType.ADAM: "ko-KR-InJoonNeural",  # Male voice for Adam
+    PersonaType.EVE: "ko-KR-SunHiNeural"      # Female voice for Eve
 }
 
 
 class TTSService:
-    """Service for text-to-speech using Google TTS"""
+    """Service for text-to-speech using Microsoft Edge TTS (Neural Voices)"""
 
     def __init__(self):
         """Initialize TTS service"""
-        logger.info("Google TTS service initialized")
+        logger.info("Edge TTS service initialized (Neural Korean voices)")
 
     async def generate_speech(
         self,
@@ -37,19 +38,19 @@ class TTSService:
         max_retries: int = 3
     ) -> Optional[str]:
         """
-        Generate speech from text using Google TTS
+        Generate speech from text using Edge TTS neural voices
 
         Args:
             text: Text to convert to speech
-            persona: Adam or Eve (determines voice settings)
+            persona: Adam or Eve (determines voice - masculine vs feminine)
             output_path: Optional path to save audio file. If None, uses temp path
             max_retries: Maximum number of retry attempts (default: 3)
 
         Returns:
             Path to generated audio file or None if error
         """
-        # Select voice settings based on persona
-        voice_config = GTTS_VOICES.get(persona, GTTS_VOICES[PersonaType.ADAM])
+        # Select voice based on persona
+        voice = EDGE_TTS_VOICES.get(persona, EDGE_TTS_VOICES[PersonaType.ADAM])
 
         # Generate output path if not provided
         if output_path is None:
@@ -58,19 +59,16 @@ class TTSService:
             import uuid
             output_path = str(output_dir / f"tts_{uuid.uuid4()}.mp3")
 
-        logger.info(f"Generating TTS with {persona.value} voice using Google TTS")
+        logger.info(f"Generating TTS with {persona.value} voice ({voice}) using Edge TTS")
 
-        # Retry logic for gTTS (network requests can fail)
+        # Retry logic for network requests
         for attempt in range(max_retries):
             try:
-                # Generate speech (gTTS is sync, so we run it in executor)
-                def _generate_tts():
-                    tts = gTTS(text=text, lang=voice_config["lang"], slow=voice_config["slow"])
-                    tts.save(output_path)
+                # Create Edge TTS communicator
+                communicate = edge_tts.Communicate(text, voice)
 
-                # Run blocking call in executor
-                loop = asyncio.get_event_loop()
-                await loop.run_in_executor(None, _generate_tts)
+                # Generate and save audio
+                await communicate.save(output_path)
 
                 logger.info(f"✅ TTS generated successfully: {output_path}")
                 return output_path
@@ -126,13 +124,53 @@ class TTSService:
             logger.error(f"Error generating base64 TTS: {e}")
             return None
 
+    async def generate_speech_stream(
+        self,
+        text: str,
+        persona: PersonaType
+    ):
+        """
+        Generate speech as a stream (yields audio chunks)
+
+        Args:
+            text: Text to convert to speech
+            persona: Adam or Eve
+
+        Yields:
+            Audio data chunks
+        """
+        # Select voice based on persona
+        voice = EDGE_TTS_VOICES.get(persona, EDGE_TTS_VOICES[PersonaType.ADAM])
+
+        logger.info(f"Streaming TTS with {persona.value} voice ({voice})")
+
+        try:
+            # Create Edge TTS communicator
+            communicate = edge_tts.Communicate(text, voice)
+
+            # Stream audio chunks
+            async for chunk in communicate.stream():
+                if chunk["type"] == "audio":
+                    yield chunk["data"]
+
+        except Exception as e:
+            logger.error(f"Error streaming TTS: {e}")
+
     async def get_available_voices(self) -> list:
         """Get list of available Korean voices"""
-        # gTTS only has one Korean voice
         return [
             {
-                "Name": "Google TTS Korean",
+                "Name": "InJoon (Adam)",
+                "Voice": "ko-KR-InJoonNeural",
                 "Locale": "ko-KR",
-                "Gender": "Neutral"
+                "Gender": "Male",
+                "Persona": "Adam"
+            },
+            {
+                "Name": "SunHi (Eve)",
+                "Voice": "ko-KR-SunHiNeural",
+                "Locale": "ko-KR",
+                "Gender": "Female",
+                "Persona": "Eve"
             }
         ]
