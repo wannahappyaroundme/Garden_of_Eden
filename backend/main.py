@@ -996,6 +996,20 @@ class OnboardingBackRequest(BaseModel):
     session_id: str
 
 
+# Voice Settings Models (must be defined before endpoints that use them)
+class VoiceSettingsUpdateRequest(BaseModel):
+    voice_type: Optional[str] = None  # Voice identifier (accepts both frontend and backend formats)
+    speed: Optional[float] = None  # Speech speed (0.5 - 2.0)
+    pitch: Optional[float] = None  # Voice pitch (0.5 - 2.0)
+    volume: Optional[float] = None  # Volume level (0.5 - 2.0)
+    persona: Optional[str] = None  # Persona name (adam, eve)
+    persona_traits: Optional[dict] = None  # Nested persona traits object
+
+
+class VoiceTestRequest(BaseModel):
+    test_message: Optional[str] = "안녕하세요, 음성 테스트입니다."  # Test message to generate
+
+
 @app.post("/api/v2/onboarding/back", tags=["Onboarding"])
 async def go_back_onboarding(
     request: OnboardingBackRequest,
@@ -1738,19 +1752,6 @@ async def get_interaction_mode(
 
 class InteractionModeRequest(BaseModel):
     mode: str  # "ai_led" or "user_led"
-
-
-class VoiceSettingsUpdateRequest(BaseModel):
-    voice_type: Optional[str] = None  # Voice identifier (accepts both frontend and backend formats)
-    speed: Optional[float] = None  # Speech speed (0.5 - 2.0)
-    pitch: Optional[float] = None  # Voice pitch (0.5 - 2.0)
-    volume: Optional[float] = None  # Volume level (0.5 - 2.0)
-    persona: Optional[str] = None  # Persona name (adam, eve)
-    persona_traits: Optional[dict] = None  # Nested persona traits object
-
-
-class VoiceTestRequest(BaseModel):
-    test_message: Optional[str] = "안녕하세요, 음성 테스트입니다."  # Test message to generate
 
 
 @app.put("/api/v2/settings/{user_id}/interaction-mode", tags=["Settings"])
