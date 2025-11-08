@@ -387,6 +387,13 @@ def get_notification_service() -> NotificationService:
     return notification_service
 
 
+def get_tts_service() -> TTSService:
+    """Dependency to get TTS service"""
+    if tts_service is None:
+        raise HTTPException(status_code=500, detail="TTS service not initialized")
+    return tts_service
+
+
 # ==================== API Endpoints ====================
 
 @app.get("/", tags=["Root"])
