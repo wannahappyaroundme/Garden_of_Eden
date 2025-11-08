@@ -1588,53 +1588,112 @@ async def get_voice_settings(
 @app.put("/api/v2/voice/{user_id}/settings", tags=["Voice"])
 async def update_voice_settings(
     user_id: str,
-    voice_id: Optional[str] = Form(None),
-    speed: Optional[float] = Form(None),
-    pitch: Optional[float] = Form(None),
-    volume: Optional[float] = Form(None),
-    persona_empathy: Optional[int] = Form(None),
-    persona_directness: Optional[int] = Form(None),
-    persona_formality: Optional[int] = Form(None),
-    persona_encouragement: Optional[int] = Form(None),
+    request: VoiceSettingsUpdateRequest,
     voice_service: VoiceCustomizationService = Depends(get_voice_customization_service)
 ):
     """
-    Update user's voice customization settings
+    Update user's voice customization settings (JSON Body)
 
     Args:
-        voice_id: Voice identifier (default, female_gentle, male_confident, neutral_calm)
-        speed: Speech speed (0.5 - 2.0)
-        pitch: Voice pitch (0.5 - 2.0)
-        volume: Volume level (0.5 - 2.0)
-        persona_empathy: Empathy level (1-5)
-        persona_directness: Directness level (1-5)
-        persona_formality: Formality level (1-5)
-        persona_encouragement: Encouragement level (1-5)
+        request: VoiceSettingsUpdateRequest with:
+            - voice_type: Voice identifier (Neural2-A, Neural2-B, Neural2-C, Neural2-D, or default/female_gentle/male_confident/neutral_calm)
+            - speed: Speech speed (0.5 - 2.0)
+            - pitch: Voice pitch (0.5 - 2.0)
+            - volume: Volume level (0.5 - 2.0)
+            - persona: Persona name (adam, eve)
+            - persona_traits: Dict with empathy, directness, formality, encouragement (1-5)
     """
-    # Build persona_traits dict
-    persona_traits = {}
-    if persona_empathy is not None:
-        persona_traits["empathy_level"] = persona_empathy
-    if persona_directness is not None:
-        persona_traits["directness"] = persona_directness
-    if persona_formality is not None:
-        persona_traits["formality"] = persona_formality
-    if persona_encouragement is not None:
-        persona_traits["encouragement"] = persona_encouragement
+    try:
+        # Map frontend voice_type to backend voice_id if needed
+        voice_id = request.voice_type
+        if voice_id and voice_id.startswith("Neural2-"):
+            # Map Google TTS voice codes to our voice IDs
+            voice_map = {
+                "Neural2-A": "male_confident",
+                "Neural2-B": "female_gentle",
+                "Neural2-C": "default",
+                "Neural2-D": "neutral_calm"
+            }
+            voice_id = voice_map.get(voice_id, "default")
 
-    settings = await voice_service.update_voice_settings(
-        user_id=user_id,
-        voice_id=voice_id,
-        speed=speed,
-        pitch=pitch,
-        volume=volume,
-        persona_traits=persona_traits if persona_traits else None
-    )
+        # Build persona_traits dict from nested object if provided
+        persona_traits = None
+        if request.persona_traits:
+            persona_traits = {
+                "empathy_level": request.persona_traits.get("empathy"),
+                "directness": request.persona_traits.get("directness"),
+                "formality": request.persona_traits.get("formality"),
+                "encouragement": request.persona_traits.get("encouragement")
+            }
+            # Remove None values
+            persona_traits = {k: v for k, v in persona_traits.items() if v is not None}
 
-    return {
-        "success": True,
-        "settings": settings
-    }
+        settings = await voice_service.update_voice_settings(
+            user_id=user_id,
+            voice_id=voice_id,
+            speed=request.speed,
+            pitch=request.pitch,
+            volume=request.volume,
+            persona_traits=persona_traits if persona_traits else None
+        )
+
+        return {
+            "success": True,
+            "settings": settings
+        }
+    except Exception as e:
+        logger.error(f"Error updating voice settings: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v2/voice/{user_id}/test", tags=["Voice"])
+async def test_voice_settings(
+    user_id: str,
+    request: VoiceTestRequest,
+    voice_service: VoiceCustomizationService = Depends(get_voice_customization_service),
+    tts: TTSService = Depends(get_tts_service)
+):
+    """
+    Test voice settings by generating TTS audio with current user settings
+
+    Args:
+        user_id: User identifier
+        request: VoiceTestRequest with optional test_message
+
+    Returns:
+        JSON with base64-encoded audio and settings used
+    """
+    try:
+        # Get user's current voice settings
+        settings = await voice_service.get_voice_settings(user_id)
+
+        # Determine persona from settings (default to adam)
+        persona = PersonaType.ADAM
+        if hasattr(settings, 'persona') and settings.persona:
+            if settings.persona.lower() == 'eve':
+                persona = PersonaType.EVE
+
+        # Generate TTS audio with user's settings
+        audio_base64 = await tts.generate_speech_base64(
+            text=request.test_message,
+            persona=persona
+        )
+
+        return {
+            "success": True,
+            "audio_base64": audio_base64,
+            "settings_used": {
+                "voice_id": settings.voice_id if hasattr(settings, 'voice_id') else "default",
+                "speed": settings.speed if hasattr(settings, 'speed') else 1.0,
+                "pitch": settings.pitch if hasattr(settings, 'pitch') else 1.0,
+                "volume": settings.volume if hasattr(settings, 'volume') else 1.0,
+                "persona": persona.value
+            },
+            "test_message": request.test_message
+        }
+    except Exception as e:
+        logger.error(f"Error testing voice settings: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/v2/voice/available-voices", tags=["Voice"])
@@ -1681,6 +1740,19 @@ class InteractionModeRequest(BaseModel):
     mode: str  # "ai_led" or "user_led"
 
 
+class VoiceSettingsUpdateRequest(BaseModel):
+    voice_type: Optional[str] = None  # Voice identifier (accepts both frontend and backend formats)
+    speed: Optional[float] = None  # Speech speed (0.5 - 2.0)
+    pitch: Optional[float] = None  # Voice pitch (0.5 - 2.0)
+    volume: Optional[float] = None  # Volume level (0.5 - 2.0)
+    persona: Optional[str] = None  # Persona name (adam, eve)
+    persona_traits: Optional[dict] = None  # Nested persona traits object
+
+
+class VoiceTestRequest(BaseModel):
+    test_message: Optional[str] = "안녕하세요, 음성 테스트입니다."  # Test message to generate
+
+
 @app.put("/api/v2/settings/{user_id}/interaction-mode", tags=["Settings"])
 async def update_interaction_mode(
     user_id: str,
@@ -1704,8 +1776,8 @@ async def update_interaction_mode(
         # Update interaction mode
         profile.interaction_mode = request.mode
 
-        # Save profile
-        await db.update_user_profile(user_id, profile)
+        # Save profile (MemoryDBService only takes profile parameter)
+        await db.update_user_profile(profile)
 
         logger.info(f"Updated interaction mode for user {user_id} to {request.mode}")
 
