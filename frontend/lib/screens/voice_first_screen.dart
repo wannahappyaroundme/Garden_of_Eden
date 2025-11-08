@@ -197,6 +197,42 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
         return;
       }
 
+      // Try local AI first for simple queries (Hybrid Routing)
+      final localLLM = ref.read(localLLMServiceProvider);
+      final localResponse = await localLLM.generateResponse(message);
+
+      if (localResponse != null) {
+        // Simple query - handled locally (FAST!)
+        appState.clearLoadingMessage();
+        appState.setMode(AppMode.responding);
+
+        // Create local response
+        final response = ChatResponse(
+          conversationId: 'local_${DateTime.now().millisecondsSinceEpoch}',
+          responseText: localResponse.text,
+          responseAudioBase64: null,
+          pitfallWarningTriggered: false,
+          emotionalSupportMode: false,
+          profileUpdated: false,
+          profileVersion: 0,
+          processingTimeMs: 100, // Very fast!
+        );
+
+        appState.setLastResponse(response);
+
+        // Add to conversation history
+        appState.addConversation(message, localResponse.text);
+
+        // For now, local responses are text-only (instant response!)
+        // TODO: Add local TTS generation in future
+
+        // Clean up
+        await _cleanupTempFiles([audioFile, ...cameraFrames]);
+        return; // Exit early - no need for cloud AI
+      }
+
+      // Complex query - continue to cloud AI below...
+
       // Update loading message for AI processing
       appState.setLoadingMessage('AI가 생각하는 중...');
       appState.setRetryAttempt(0);

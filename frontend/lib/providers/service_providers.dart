@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/api_service.dart';
 import '../services/audio_service.dart';
 import '../services/camera_service.dart';
+import '../services/local_llm_service.dart';
+import '../services/intent_classifier_service.dart';
 
 /// API Service Provider
 final apiServiceProvider = Provider<ApiService>((ref) {
@@ -19,4 +21,14 @@ final audioServiceProvider = Provider<AudioService>((ref) {
 /// Camera Service Provider
 final cameraServiceProvider = Provider<CameraService>((ref) {
   return CameraService();
+});
+
+/// Local LLM Service Provider (On-Device AI)
+final localLLMServiceProvider = Provider<LocalLLMService>((ref) {
+  return LocalLLMService();
+});
+
+/// Intent Classifier Service Provider
+final intentClassifierServiceProvider = Provider<IntentClassifierService>((ref) {
+  return IntentClassifierService();
 });

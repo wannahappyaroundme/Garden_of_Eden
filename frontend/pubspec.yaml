@@ -25,6 +25,10 @@ dependencies:
   # Wake Word Detection
   porcupine_flutter: ^3.0.2
 
+  # On-Device AI
+  tflite_flutter: ^0.10.4
+  tflite_flutter_helper: ^0.3.1
+
   # HTTP & API
   dio: ^5.4.0
   http: ^1.1.2
