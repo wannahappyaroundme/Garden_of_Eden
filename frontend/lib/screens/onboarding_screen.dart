@@ -225,6 +225,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final cameraService = ref.watch(cameraServiceProvider);
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           // 1. Full-screen camera view
