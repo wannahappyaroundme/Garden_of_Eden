@@ -34,7 +34,7 @@ class WakeWordService {
       _porcupineManager = await PorcupineManager.fromKeywordPaths(
         // Picovoice Access Key (you need to get this from Picovoice Console)
         // For now, using empty string - will need to be replaced
-        '',
+        'atzIyNSvFrv+IfmELJ0Kjt3+7O/aUr5vpCtCAXmeo+FzDZzYOn43Ew==',
         [keywordPath],
         _wakeWordCallback,
         errorCallback: _errorCallback,
@@ -51,10 +51,16 @@ class WakeWordService {
 
   /// Get the appropriate keyword file path based on platform and persona
   Future<String> _getKeywordPath(PersonaType persona) async {
-    final platform = Platform.isAndroid ? 'android' : 'ios';
-    final personaName = persona == PersonaType.adam ? 'adam' : 'eve';
+    // Currently only supporting Android + Hey Adam
+    if (!Platform.isAndroid) {
+      throw UnsupportedError('Wake word is currently only supported on Android');
+    }
 
-    return 'assets/wake_words/hey_${personaName}_$platform.ppn';
+    if (persona != PersonaType.adam) {
+      throw UnsupportedError('Wake word is currently only available for Adam persona');
+    }
+
+    return 'assets/wake_words/hey_adam_android.ppn';
   }
 
   /// Start listening for wake word
