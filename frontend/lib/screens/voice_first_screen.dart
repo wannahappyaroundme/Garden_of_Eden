@@ -352,7 +352,6 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
           if (appState.loadingMessage != null)
             LoadingOverlay(
               message: appState.loadingMessage!,
-              retryAttempt: appState.retryAttempt > 0 ? appState.retryAttempt : null,
               persona: appState.persona,
             ),
 
