@@ -6,6 +6,7 @@ import '../utils/constants.dart';
 import 'voice_settings_screen.dart';
 import 'notification_settings_screen.dart';
 import 'interaction_mode_screen.dart';
+import 'wake_word_settings_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   final String userId;
@@ -45,6 +46,24 @@ class SettingsScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (context) => InteractionModeScreen(userId: userId),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: UIConstants.spacingMD),
+
+          // Wake Word Settings
+          _buildSettingsCard(
+            context,
+            title: 'Wake Word Detection',
+            subtitle: 'Configure "Hey Adam" voice activation',
+            icon: Icons.hearing,
+            color: Colors.green,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => WakeWordSettingsScreen(userId: userId),
                 ),
               );
             },
