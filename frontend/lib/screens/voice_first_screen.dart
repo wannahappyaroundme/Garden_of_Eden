@@ -14,6 +14,7 @@ import '../widgets/pitfall_warning_banner.dart';
 import '../providers/app_state_provider.dart';
 import '../providers/session_provider.dart';
 import '../providers/service_providers.dart';
+import '../providers/wake_word_provider.dart';
 import '../models/chat_models.dart';
 import '../utils/constants.dart';
 import '../utils/page_transitions.dart';
@@ -32,17 +33,49 @@ class VoiceFirstScreen extends ConsumerStatefulWidget {
 
 class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
   Timer? _autoHideTimer;
+  bool _isCameraEnabled = false;
 
   @override
   void initState() {
     super.initState();
-    _initializeCamera();
+    // Camera is now optional - don't initialize automatically
     _initializeSession();
+    _initializeWakeWord();
   }
 
   Future<void> _initializeSession() async {
     final session = ref.read(sessionProvider.notifier);
     await session.initialize(widget.userId);
+  }
+
+  Future<void> _initializeWakeWord() async {
+    try {
+      final wakeWordService = ref.read(wakeWordServiceProvider);
+      final currentPersona = ref.read(appStateProvider).persona;
+
+      // Initialize wake word with callback
+      await wakeWordService.initialize(
+        persona: currentPersona,
+        onDetected: (detectedPersona) {
+          // Wake word detected! Start recording automatically
+          _onWakeWordDetected(detectedPersona);
+        },
+        onErrorCallback: (error) {
+          // Handle wake word errors silently
+        },
+      );
+
+      // Start listening automatically
+      await wakeWordService.startListening();
+    } catch (e) {
+      // Silently fail - wake word is optional feature
+      // Could be iOS or unsupported device
+    }
+  }
+
+  void _onWakeWordDetected(PersonaType detectedPersona) {
+    // Wake word detected - start recording
+    _startRecording();
   }
 
   @override
@@ -52,13 +85,25 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
     super.dispose();
   }
 
-  Future<void> _initializeCamera() async {
-    try {
+  Future<void> _toggleCamera() async {
+    if (_isCameraEnabled) {
+      // Disable camera
       final cameraService = ref.read(cameraServiceProvider);
-      await cameraService.initialize();
-      setState(() {}); // Refresh to show camera
-    } catch (e) {
-      _showError('카메라 초기화 실패: $e');
+      await cameraService.dispose();
+      setState(() {
+        _isCameraEnabled = false;
+      });
+    } else {
+      // Enable camera
+      try {
+        final cameraService = ref.read(cameraServiceProvider);
+        await cameraService.initialize();
+        setState(() {
+          _isCameraEnabled = true;
+        });
+      } catch (e) {
+        _showError('카메라 초기화 실패: $e');
+      }
     }
   }
 
@@ -87,8 +132,10 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
       // Start audio recording
       await audioService.startRecording();
 
-      // Start camera capture
-      cameraService.startCapture();
+      // Start camera capture (only if camera is enabled)
+      if (_isCameraEnabled) {
+        cameraService.startCapture();
+      }
     } catch (e) {
       _showError('녹음 시작 실패: $e');
       ref.read(appStateProvider.notifier).setMode(AppMode.idle);
@@ -107,7 +154,11 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
       // Stop recording
       appState.setLoadingMessage('음성을 처리하는 중...');
       final audioFile = await audioService.stopRecording();
-      final cameraFrames = await cameraService.stopAndGetKeyframes();
+
+      // Get camera keyframes (only if camera is enabled)
+      final cameraFrames = _isCameraEnabled
+          ? await cameraService.stopAndGetKeyframes()
+          : <File>[];
 
       if (audioFile == null) {
         _showError('녹음 파일이 없습니다');
@@ -284,6 +335,7 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
   Widget build(BuildContext context) {
     final appState = ref.watch(appStateProvider);
     final cameraService = ref.watch(cameraServiceProvider);
+    final wakeWordService = ref.watch(wakeWordServiceProvider);
 
     return Scaffold(
       body: Stack(
@@ -291,7 +343,7 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
           // 1. Full-screen camera view
           CameraView(controller: cameraService.controller),
 
-          // 2. Top navigation bar
+          // 2. Top navigation bar with wake word indicator
           Positioned(
             top: 50,
             left: 16,
@@ -299,13 +351,76 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Profile button
-                IconButton(
-                  icon: const Icon(Icons.person, color: Colors.white, size: 28),
-                  onPressed: () {
-                    AppNavigation.toProfile(context, widget.userId);
-                  },
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Camera toggle button
+                    IconButton(
+                      icon: Icon(
+                        _isCameraEnabled ? Icons.videocam : Icons.videocam_off,
+                        color: _isCameraEnabled
+                            ? Color(UIConstants.electricCyan)
+                            : Colors.white.withValues(alpha: 0.5),
+                        size: 28,
+                      ),
+                      onPressed: _toggleCamera,
+                    ),
+                    const SizedBox(width: 8),
+                    // Profile button
+                    IconButton(
+                      icon: const Icon(Icons.person, color: Colors.white, size: 28),
+                      onPressed: () {
+                        AppNavigation.toProfile(context, widget.userId);
+                      },
+                    ),
+                  ],
                 ),
+                // Wake word listening indicator
+                if (wakeWordService.isListening)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Color(UIConstants.electricCyan).withValues(alpha: 0.5),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Animated listening icon
+                        TweenAnimationBuilder<double>(
+                          tween: Tween(begin: 0.0, end: 1.0),
+                          duration: const Duration(milliseconds: 1000),
+                          builder: (context, value, child) {
+                            return Opacity(
+                              opacity: 0.5 + (value * 0.5),
+                              child: Icon(
+                                Icons.mic,
+                                color: Color(UIConstants.electricCyan),
+                                size: 16,
+                              ),
+                            );
+                          },
+                          onEnd: () {
+                            // Loop animation by triggering rebuild
+                            if (mounted) setState(() {});
+                          },
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Hey Adam 대기중',
+                          style: TextStyle(
+                            color: Color(UIConstants.electricCyan),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 // Settings button
                 IconButton(
                   icon: const Icon(Icons.settings, color: Colors.white, size: 28),
