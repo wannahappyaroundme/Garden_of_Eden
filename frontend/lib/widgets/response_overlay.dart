@@ -6,17 +6,20 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../utils/constants.dart';
+import '../providers/app_state_provider.dart';
 
 class ResponseOverlay extends StatelessWidget {
   final String? response;
   final bool isPlaying;
   final VoidCallback? onDismiss;
+  final List<ConversationItem> conversationHistory;
 
   const ResponseOverlay({
     super.key,
     required this.response,
     required this.isPlaying,
     this.onDismiss,
+    this.conversationHistory = const [],
   });
 
   @override
@@ -84,22 +87,79 @@ class ResponseOverlay extends StatelessWidget {
                       child: const _TTSWaveform(),
                     ),
 
-                  // Response text (markdown)
+                  // Conversation history + current response
                   Expanded(
                     child: SingleChildScrollView(
-                      child: MarkdownBody(
-                        data: response!,
-                        styleSheet: MarkdownStyleSheet(
-                          p: const TextStyle(
-                            color: Colors.white,
-                            fontSize: UIConstants.fontBodyLarge,
-                            height: 1.5,
-                          ),
-                          code: TextStyle(
-                            backgroundColor: Colors.grey[800],
-                            color: Color(UIConstants.electricCyan),
-                          ),
-                        ),
+                      reverse: true, // Auto-scroll to bottom
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Previous conversation history
+                          if (conversationHistory.isNotEmpty)
+                            ...conversationHistory.map((item) => Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // User message
+                                Container(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Color(UIConstants.electricCyan).withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    '나: ${item.userMessage}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: UIConstants.fontBody,
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                ),
+                                // AI response
+                                Container(
+                                  margin: const EdgeInsets.only(bottom: 16),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: MarkdownBody(
+                                    data: item.aiResponse,
+                                    styleSheet: MarkdownStyleSheet(
+                                      p: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: UIConstants.fontBody,
+                                        height: 1.5,
+                                      ),
+                                      code: TextStyle(
+                                        backgroundColor: Colors.grey[800],
+                                        color: Color(UIConstants.electricCyan),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )),
+
+                          // Current response (larger)
+                          if (response != null && response!.isNotEmpty)
+                            MarkdownBody(
+                              data: response!,
+                              styleSheet: MarkdownStyleSheet(
+                                p: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: UIConstants.fontBodyLarge,
+                                  height: 1.5,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                code: TextStyle(
+                                  backgroundColor: Colors.grey[800],
+                                  color: Color(UIConstants.electricCyan),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),

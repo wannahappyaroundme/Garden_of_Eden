@@ -75,6 +75,12 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
       final cameraService = ref.read(cameraServiceProvider);
       final appState = ref.read(appStateProvider.notifier);
 
+      // Stop TTS playback if currently playing (allow interruption)
+      if (ref.read(appStateProvider).isTTSPlaying) {
+        await audioService.stopPlayback();
+        appState.setTTSPlaying(false);
+      }
+
       appState.setMode(AppMode.listening);
       appState.setLoadingMessage('녹음 중...');
 
@@ -168,8 +174,7 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
           audioFile: audioFile,
         );
 
-        // Clear loading and switch to streaming mode
-        appState.clearLoadingMessage();
+        // Keep loading overlay (don't clear yet - wait for TTS)
         appState.setMode(AppMode.responding);
 
         await for (final event in stream) {
@@ -202,6 +207,9 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
               appState.showPitfall('주의: One Thing에서 벗어나고 있습니다!');
             }
 
+            // NOW clear loading overlay before playing TTS
+            appState.clearLoadingMessage();
+
             // Play TTS audio
             if (finalAudioBase64 != null) {
               appState.setTTSPlaying(true);
@@ -226,6 +234,9 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
         // Update state with final response
         appState.setLastResponse(response);
 
+        // Add to conversation history
+        appState.addConversation(message, fullResponseText);
+
         // Increment turn count after successful conversation
         sessionNotifier.incrementTurnCount();
       } catch (e) {
@@ -235,12 +246,8 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
         return;
       }
 
-      // Auto-hide response after 3 seconds
-      _autoHideTimer?.cancel();
-      _autoHideTimer = Timer(UIConstants.responseAutoHideDuration, () {
-        appState.setMode(AppMode.idle);
-        appState.clearResponse();
-      });
+      // Don't auto-hide - keep conversation history visible
+      // User can start new conversation anytime (even during TTS playback)
 
       // Clean up temporary files
       await _cleanupTempFiles([audioFile, ...cameraFrames]);
@@ -337,13 +344,15 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
             ),
           ),
 
-          // 5. Response overlay (bottom 1/3)
+          // 5. Response overlay (bottom 1/3) with conversation history
           if (appState.lastResponse != null)
             ResponseOverlay(
               response: appState.lastResponse?.responseText,
               isPlaying: appState.isTTSPlaying,
+              conversationHistory: appState.conversationHistory,
               onDismiss: () {
-                ref.read(appStateProvider.notifier).clearResponse();
+                // Don't clear response - keep history visible
+                // Just return to idle mode
                 ref.read(appStateProvider.notifier).setMode(AppMode.idle);
               },
             ),

@@ -14,23 +14,55 @@ from utils.constants import PersonaType
 logger = get_logger(__name__)
 
 # Voice mapping for personas using Google Cloud Neural2 Voices
-# Adam: Masculine voice (Neural2-C)
-# Eve: Feminine voices (Neural2-A bright, Neural2-B soft)
-GOOGLE_TTS_VOICES = {
+# Supports both Korean (ko-KR) and English (en-US)
+# Default language: Korean
+
+# Korean Voices
+GOOGLE_TTS_VOICES_KO = {
     PersonaType.ADAM: {
         "name": "ko-KR-Neural2-C",  # Male voice for Adam (deep, stable)
-        "gender": texttospeech.SsmlVoiceGender.MALE
+        "gender": texttospeech.SsmlVoiceGender.MALE,
+        "language_code": "ko-KR"
     },
     PersonaType.EVE: {
         "name": "ko-KR-Neural2-A",  # Female voice for Eve (default: bright, friendly)
-        "gender": texttospeech.SsmlVoiceGender.FEMALE
+        "gender": texttospeech.SsmlVoiceGender.FEMALE,
+        "language_code": "ko-KR"
     }
 }
 
-# Eve voice variants
-EVE_VOICE_VARIANTS = {
+# English Voices (Premium Neural2 - Higher Quality)
+GOOGLE_TTS_VOICES_EN = {
+    PersonaType.ADAM: {
+        "name": "en-US-Neural2-D",  # Male voice for Adam (deep, authoritative)
+        "gender": texttospeech.SsmlVoiceGender.MALE,
+        "language_code": "en-US"
+    },
+    PersonaType.EVE: {
+        "name": "en-US-Neural2-F",  # Female voice for Eve (natural, conversational)
+        "gender": texttospeech.SsmlVoiceGender.FEMALE,
+        "language_code": "en-US"
+    }
+}
+
+# Default to Korean for backward compatibility
+GOOGLE_TTS_VOICES = GOOGLE_TTS_VOICES_KO
+
+# Korean Eve voice variants
+EVE_VOICE_VARIANTS_KO = {
     "Neural2-A": "ko-KR-Neural2-A",  # Bright & Friendly
     "Neural2-B": "ko-KR-Neural2-B",  # Soft & Calm
+}
+
+# English voice variants (both Adam and Eve)
+VOICE_VARIANTS_EN = {
+    # Adam variants
+    "Neural2-D": "en-US-Neural2-D",  # Deep, authoritative (default)
+    "Neural2-J": "en-US-Neural2-J",  # Warm, friendly
+    # Eve variants
+    "Neural2-F": "en-US-Neural2-F",  # Natural, conversational (default)
+    "Neural2-G": "en-US-Neural2-G",  # Professional, warm
+    "Neural2-C": "en-US-Neural2-C",  # Clear, energetic
 }
 
 
@@ -47,23 +79,37 @@ class TTSService:
             logger.error(f"❌ Failed to initialize Google Cloud TTS: {e}")
             self.client = None
 
+    def _detect_language(self, text: str) -> str:
+        """Detect if text is primarily Korean or English"""
+        korean_chars = sum(1 for c in text if '\uac00' <= c <= '\ud7a3')  # Korean syllables
+        total_chars = len([c for c in text if c.isalpha()])
+
+        if total_chars == 0:
+            return "ko-KR"  # Default to Korean
+
+        korean_ratio = korean_chars / total_chars
+        return "ko-KR" if korean_ratio > 0.3 else "en-US"
+
     async def generate_speech(
         self,
         text: str,
         persona: PersonaType,
         output_path: Optional[str] = None,
         max_retries: int = 3,
-        voice_variant: Optional[str] = None
+        voice_variant: Optional[str] = None,
+        language: Optional[str] = None  # NEW: Allow explicit language override
     ) -> Optional[str]:
         """
         Generate speech from text using Google Cloud TTS neural voices
+        Automatically detects language (Korean/English) and uses appropriate voice
 
         Args:
             text: Text to convert to speech
             persona: Adam or Eve (determines voice - masculine vs feminine)
             output_path: Optional path to save audio file. If None, uses temp path
             max_retries: Maximum number of retry attempts (default: 3)
-            voice_variant: Optional voice variant code (e.g., "Neural2-A", "Neural2-B" for Eve)
+            voice_variant: Optional voice variant code (e.g., "Neural2-A", "Neural2-B" for Korean Eve)
+            language: Optional language override ("ko-KR" or "en-US"). If None, auto-detects.
 
         Returns:
             Path to generated audio file or None if error
@@ -72,13 +118,21 @@ class TTSService:
             logger.error("TTS client not initialized")
             return None
 
-        # Select voice based on persona
-        voice_config = GOOGLE_TTS_VOICES.get(persona, GOOGLE_TTS_VOICES[PersonaType.ADAM]).copy()
+        # Detect language if not explicitly provided
+        detected_lang = language if language else self._detect_language(text)
 
-        # Override with voice variant if provided (for Eve)
-        if persona == PersonaType.EVE and voice_variant and voice_variant in EVE_VOICE_VARIANTS:
-            voice_config["name"] = EVE_VOICE_VARIANTS[voice_variant]
-            logger.info(f"Using Eve voice variant: {voice_variant} ({voice_config['name']})")
+        # Select voice map based on language
+        voice_map = GOOGLE_TTS_VOICES_EN if detected_lang == "en-US" else GOOGLE_TTS_VOICES_KO
+        voice_config = voice_map.get(persona, voice_map[PersonaType.ADAM]).copy()
+
+        # Override with voice variant if provided
+        if voice_variant:
+            if detected_lang == "ko-KR" and persona == PersonaType.EVE and voice_variant in EVE_VOICE_VARIANTS_KO:
+                voice_config["name"] = EVE_VOICE_VARIANTS_KO[voice_variant]
+                logger.info(f"Using Korean Eve voice variant: {voice_variant} ({voice_config['name']})")
+            elif detected_lang == "en-US" and voice_variant in VOICE_VARIANTS_EN:
+                voice_config["name"] = VOICE_VARIANTS_EN[voice_variant]
+                logger.info(f"Using English voice variant: {voice_variant} ({voice_config['name']})")
 
         # Generate output path if not provided
         if output_path is None:
@@ -87,7 +141,7 @@ class TTSService:
             import uuid
             output_path = str(output_dir / f"tts_{uuid.uuid4()}.mp3")
 
-        logger.info(f"Generating TTS with {persona.value} voice ({voice_config['name']}) using Google Cloud TTS")
+        logger.info(f"Generating TTS with {persona.value} voice ({voice_config['name']}) - Language: {detected_lang}")
 
         # Retry logic for network requests
         for attempt in range(max_retries):
@@ -97,7 +151,7 @@ class TTSService:
 
                 # Build the voice request
                 voice = texttospeech.VoiceSelectionParams(
-                    language_code="ko-KR",
+                    language_code=voice_config["language_code"],  # Use detected language
                     name=voice_config["name"],
                     ssml_gender=voice_config["gender"]
                 )
@@ -179,33 +233,88 @@ class TTSService:
             return None
 
     async def get_available_voices(self) -> list:
-        """Get list of available Korean voices"""
+        """Get list of available voices (Korean and English)"""
         return [
+            # Korean Voices
             {
-                "Name": "Adam (Deep, Stable)",
+                "Name": "Adam (Deep, Stable) - Korean",
                 "Voice": "ko-KR-Neural2-C",
                 "VoiceCode": "Neural2-C",
                 "Locale": "ko-KR",
                 "Gender": "Male",
                 "Persona": "Adam",
-                "Description": "Masculine voice with deep and stable tone"
+                "Description": "Masculine voice with deep and stable tone",
+                "Language": "Korean"
             },
             {
-                "Name": "Eve - Bright & Friendly",
+                "Name": "Eve - Bright & Friendly - Korean",
                 "Voice": "ko-KR-Neural2-A",
                 "VoiceCode": "Neural2-A",
                 "Locale": "ko-KR",
                 "Gender": "Female",
                 "Persona": "Eve",
-                "Description": "Energetic and warm tone, perfect for encouragement"
+                "Description": "Energetic and warm tone, perfect for encouragement",
+                "Language": "Korean"
             },
             {
-                "Name": "Eve - Soft & Calm",
+                "Name": "Eve - Soft & Calm - Korean",
                 "Voice": "ko-KR-Neural2-B",
                 "VoiceCode": "Neural2-B",
                 "Locale": "ko-KR",
                 "Gender": "Female",
                 "Persona": "Eve",
-                "Description": "Gentle and soothing tone, ideal for reflection"
+                "Description": "Gentle and soothing tone, ideal for reflection",
+                "Language": "Korean"
+            },
+            # English Voices
+            {
+                "Name": "Adam (Deep, Authoritative) - English",
+                "Voice": "en-US-Neural2-D",
+                "VoiceCode": "Neural2-D",
+                "Locale": "en-US",
+                "Gender": "Male",
+                "Persona": "Adam",
+                "Description": "Deep, authoritative voice - Professional and commanding",
+                "Language": "English"
+            },
+            {
+                "Name": "Adam (Warm, Friendly) - English",
+                "Voice": "en-US-Neural2-J",
+                "VoiceCode": "Neural2-J",
+                "Locale": "en-US",
+                "Gender": "Male",
+                "Persona": "Adam",
+                "Description": "Warm, friendly tone - Approachable and supportive",
+                "Language": "English"
+            },
+            {
+                "Name": "Eve (Natural, Conversational) - English",
+                "Voice": "en-US-Neural2-F",
+                "VoiceCode": "Neural2-F",
+                "Locale": "en-US",
+                "Gender": "Female",
+                "Persona": "Eve",
+                "Description": "Natural, conversational tone - Relatable and engaging",
+                "Language": "English"
+            },
+            {
+                "Name": "Eve (Professional, Warm) - English",
+                "Voice": "en-US-Neural2-G",
+                "VoiceCode": "Neural2-G",
+                "Locale": "en-US",
+                "Gender": "Female",
+                "Persona": "Eve",
+                "Description": "Professional, warm voice - Confident and reassuring",
+                "Language": "English"
+            },
+            {
+                "Name": "Eve (Clear, Energetic) - English",
+                "Voice": "en-US-Neural2-C",
+                "VoiceCode": "Neural2-C",
+                "Locale": "en-US",
+                "Gender": "Female",
+                "Persona": "Eve",
+                "Description": "Clear, energetic tone - Bright and motivating",
+                "Language": "English"
             }
         ]

@@ -5,6 +5,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/chat_models.dart';
 import '../utils/constants.dart';
 
+/// Conversation history item
+class ConversationItem {
+  final String userMessage;
+  final String aiResponse;
+  final DateTime timestamp;
+
+  ConversationItem({
+    required this.userMessage,
+    required this.aiResponse,
+    required this.timestamp,
+  });
+}
+
 /// App State
 class AppState {
   final AppMode mode;
@@ -16,6 +29,7 @@ class AppState {
   final String? loadingMessage;
   final bool showPitfallWarning;
   final String? pitfallMessage;
+  final List<ConversationItem> conversationHistory;
 
   AppState({
     this.mode = AppMode.idle,
@@ -27,6 +41,7 @@ class AppState {
     this.loadingMessage,
     this.showPitfallWarning = false,
     this.pitfallMessage,
+    this.conversationHistory = const [],
   });
 
   AppState copyWith({
@@ -39,6 +54,7 @@ class AppState {
     String? loadingMessage,
     bool? showPitfallWarning,
     String? pitfallMessage,
+    List<ConversationItem>? conversationHistory,
     bool clearError = false,
     bool clearResponse = false,
     bool clearLoading = false,
@@ -54,6 +70,7 @@ class AppState {
       loadingMessage: clearLoading ? null : (loadingMessage ?? this.loadingMessage),
       showPitfallWarning: clearPitfall ? false : (showPitfallWarning ?? this.showPitfallWarning),
       pitfallMessage: clearPitfall ? null : (pitfallMessage ?? this.pitfallMessage),
+      conversationHistory: conversationHistory ?? this.conversationHistory,
     );
   }
 }
@@ -111,6 +128,20 @@ class AppStateNotifier extends StateNotifier<AppState> {
 
   void hidePitfall() {
     state = state.copyWith(clearPitfall: true);
+  }
+
+  void addConversation(String userMessage, String aiResponse) {
+    final newHistory = List<ConversationItem>.from(state.conversationHistory);
+    newHistory.add(ConversationItem(
+      userMessage: userMessage,
+      aiResponse: aiResponse,
+      timestamp: DateTime.now(),
+    ));
+    state = state.copyWith(conversationHistory: newHistory);
+  }
+
+  void clearConversationHistory() {
+    state = state.copyWith(conversationHistory: []);
   }
 
   void reset() {
