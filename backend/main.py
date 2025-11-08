@@ -624,7 +624,12 @@ async def chat_stream(
             if goal_progress_context:
                 goal_context_string = goal_progress_context
 
+            # Log timing for each stage
+            context_load_time = (datetime.now() - start_time).total_seconds()
+            logger.info(f"⏱️ Context loading time: {context_load_time:.2f}s")
+
             # Stream AI response
+            llm_start_time = datetime.now()
             logger.info("🌊 Starting streaming AI response generation...")
             full_response = ""
 
@@ -646,14 +651,20 @@ async def chat_stream(
                 # Send text chunk as SSE event
                 yield f"data: {json.dumps({'type': 'text_chunk', 'content': text_chunk})}\n\n"
 
+            # Log LLM completion time
+            llm_time = (datetime.now() - llm_start_time).total_seconds()
             logger.info(f"✅ Streaming response completed: {full_response[:100]}...")
+            logger.info(f"⏱️ LLM generation time: {llm_time:.2f}s")
 
             # Generate TTS audio after streaming text is complete
-            logger.info("Generating TTS audio...")
+            tts_start_time = datetime.now()
+            logger.info("🎙️ Generating TTS audio...")
             audio_base64 = await processor.tts.generate_speech_base64(
                 text=full_response,
                 persona=persona
             )
+            tts_time = (datetime.now() - tts_start_time).total_seconds()
+            logger.info(f"⏱️ TTS generation time: {tts_time:.2f}s")
 
             # Save conversation to database
             from models.conversation import Conversation, ConversationMessage
@@ -695,6 +706,9 @@ async def chat_stream(
 
             # Send final event with metadata and audio
             processing_time = int((datetime.now() - start_time).total_seconds() * 1000)
+            total_time = (datetime.now() - start_time).total_seconds()
+            logger.info(f"⏱️ TOTAL processing time: {total_time:.2f}s (Context: {context_load_time:.2f}s, LLM: {llm_time:.2f}s, TTS: {tts_time:.2f}s)")
+
             final_event = {
                 'type': 'complete',
                 'conversation_id': conversation.conversation_id,
