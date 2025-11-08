@@ -10,11 +10,13 @@ class ConversationItem {
   final String userMessage;
   final String aiResponse;
   final DateTime timestamp;
+  final bool wasInterrupted;
 
   ConversationItem({
     required this.userMessage,
     required this.aiResponse,
     required this.timestamp,
+    this.wasInterrupted = false,
   });
 }
 
@@ -130,18 +132,35 @@ class AppStateNotifier extends StateNotifier<AppState> {
     state = state.copyWith(clearPitfall: true);
   }
 
-  void addConversation(String userMessage, String aiResponse) {
+  void addConversation(String userMessage, String aiResponse, {bool wasInterrupted = false}) {
     final newHistory = List<ConversationItem>.from(state.conversationHistory);
     newHistory.add(ConversationItem(
       userMessage: userMessage,
       aiResponse: aiResponse,
       timestamp: DateTime.now(),
+      wasInterrupted: wasInterrupted,
     ));
     state = state.copyWith(conversationHistory: newHistory);
   }
 
   void clearConversationHistory() {
     state = state.copyWith(conversationHistory: []);
+  }
+
+  void markLastConversationAsInterrupted() {
+    if (state.conversationHistory.isEmpty) return;
+
+    final updatedHistory = List<ConversationItem>.from(state.conversationHistory);
+    final lastConversation = updatedHistory.last;
+
+    updatedHistory[updatedHistory.length - 1] = ConversationItem(
+      userMessage: lastConversation.userMessage,
+      aiResponse: lastConversation.aiResponse,
+      timestamp: lastConversation.timestamp,
+      wasInterrupted: true,
+    );
+
+    state = state.copyWith(conversationHistory: updatedHistory);
   }
 
   void reset() {

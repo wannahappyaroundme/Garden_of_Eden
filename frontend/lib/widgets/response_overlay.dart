@@ -123,20 +123,57 @@ class ResponseOverlay extends StatelessWidget {
                                   decoration: BoxDecoration(
                                     color: Colors.white.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(12),
+                                    border: item.wasInterrupted
+                                        ? Border.all(
+                                            color: Colors.orange.withValues(alpha: 0.5),
+                                            width: 1,
+                                          )
+                                        : null,
                                   ),
-                                  child: MarkdownBody(
-                                    data: item.aiResponse,
-                                    styleSheet: MarkdownStyleSheet(
-                                      p: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: UIConstants.fontBody,
-                                        height: 1.5,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Interrupted indicator
+                                      if (item.wasInterrupted)
+                                        Padding(
+                                          padding: const EdgeInsets.only(bottom: 8),
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.pause_circle_outline,
+                                                color: Colors.orange,
+                                                size: 16,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                '중단됨',
+                                                style: TextStyle(
+                                                  color: Colors.orange,
+                                                  fontSize: UIConstants.fontCaption,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      // Response text
+                                      MarkdownBody(
+                                        data: item.aiResponse,
+                                        styleSheet: MarkdownStyleSheet(
+                                          p: TextStyle(
+                                            color: item.wasInterrupted
+                                                ? Colors.white.withValues(alpha: 0.7)
+                                                : Colors.white,
+                                            fontSize: UIConstants.fontBody,
+                                            height: 1.5,
+                                          ),
+                                          code: TextStyle(
+                                            backgroundColor: Colors.grey[800],
+                                            color: Color(UIConstants.electricCyan),
+                                          ),
+                                        ),
                                       ),
-                                      code: TextStyle(
-                                        backgroundColor: Colors.grey[800],
-                                        color: Color(UIConstants.electricCyan),
-                                      ),
-                                    ),
+                                    ],
                                   ),
                                 ),
                               ],

@@ -119,11 +119,15 @@ class _VoiceFirstScreenState extends ConsumerState<VoiceFirstScreen> {
       final audioService = ref.read(audioServiceProvider);
       final cameraService = ref.read(cameraServiceProvider);
       final appState = ref.read(appStateProvider.notifier);
+      final currentState = ref.read(appStateProvider);
 
       // Stop TTS playback if currently playing (allow interruption)
-      if (ref.read(appStateProvider).isTTSPlaying) {
+      if (currentState.isTTSPlaying) {
         await audioService.stopPlayback();
         appState.setTTSPlaying(false);
+
+        // Mark the last conversation as interrupted
+        appState.markLastConversationAsInterrupted();
       }
 
       appState.setMode(AppMode.listening);
