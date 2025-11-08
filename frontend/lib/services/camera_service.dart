@@ -54,34 +54,28 @@ class CameraService {
     }
   }
 
-  /// Start capturing at 1 FPS
+  /// Capture a single photo (no continuous capture)
   void startCapture() {
     if (!_isInitialized || _isCapturing) return;
 
     _isCapturing = true;
     _capturedFrames.clear();
 
-    // Capture every 1 second (1 FPS)
-    _captureTimer = Timer.periodic(
-      const Duration(milliseconds: CameraConfig.captureIntervalMs),
-      (_) => _captureFrame(),
-    );
+    // Capture one photo immediately
+    _captureFrame();
   }
 
-  /// Stop capturing and return keyframes
+  /// Stop capturing and return the single photo
   Future<List<File>> stopAndGetKeyframes() async {
     if (!_isCapturing) return [];
 
-    // Stop timer
-    _captureTimer?.cancel();
-    _captureTimer = null;
     _isCapturing = false;
 
-    // Select keyframes
-    final keyframes = _selectKeyframes(_capturedFrames);
+    // Return the single captured photo
+    if (_capturedFrames.isEmpty) return [];
 
-    // Convert to files
-    final files = await _saveKeyframesToFiles(keyframes);
+    // Convert to file
+    final files = await _saveKeyframesToFiles(_capturedFrames);
 
     // Clear captured frames
     _capturedFrames.clear();
@@ -113,27 +107,6 @@ class CameraService {
       // Silently fail - don't stop capturing
       // Error is logged but not thrown to avoid stopping capture
     }
-  }
-
-  /// Select keyframes from captured frames
-  List<CameraFrame> _selectKeyframes(List<CameraFrame> frames) {
-    if (frames.isEmpty) return [];
-
-    final maxFrames = CameraConfig.maxKeyframes;
-
-    // If we have fewer frames than max, return all
-    if (frames.length <= maxFrames) return frames;
-
-    // Select evenly distributed keyframes
-    final keyframes = <CameraFrame>[];
-    final step = frames.length / maxFrames;
-
-    for (int i = 0; i < maxFrames; i++) {
-      final index = (i * step).floor();
-      keyframes.add(frames[index]);
-    }
-
-    return keyframes;
   }
 
   /// Compress image to reduce size

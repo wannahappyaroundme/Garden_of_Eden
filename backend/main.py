@@ -628,10 +628,12 @@ async def chat_stream(
             context_load_time = (datetime.now() - start_time).total_seconds()
             logger.info(f"⏱️ Context loading time: {context_load_time:.2f}s")
 
-            # Stream AI response
+            # Stream AI response with parallel TTS generation
             llm_start_time = datetime.now()
             logger.info("🌊 Starting streaming AI response generation...")
             full_response = ""
+            tts_task = None
+            tts_start_time = None
 
             async for text_chunk in processor.llm.generate_response_stream(
                 user_message=message,
@@ -648,6 +650,20 @@ async def chat_stream(
                 goal_context=goal_context_string
             ):
                 full_response += text_chunk
+
+                # Start TTS generation in background after accumulating some text
+                if tts_task is None and len(full_response) > 100:
+                    tts_start_time = datetime.now()
+                    logger.info("🎙️ Starting parallel TTS generation...")
+                    # Capture current response for TTS
+                    current_text = full_response
+                    tts_task = asyncio.create_task(
+                        processor.tts.generate_speech_base64(
+                            text=current_text,
+                            persona=persona
+                        )
+                    )
+
                 # Send text chunk as SSE event
                 yield f"data: {json.dumps({'type': 'text_chunk', 'content': text_chunk})}\n\n"
 
@@ -656,14 +672,22 @@ async def chat_stream(
             logger.info(f"✅ Streaming response completed: {full_response[:100]}...")
             logger.info(f"⏱️ LLM generation time: {llm_time:.2f}s")
 
-            # Generate TTS audio after streaming text is complete
-            tts_start_time = datetime.now()
-            logger.info("🎙️ Generating TTS audio...")
-            audio_base64 = await processor.tts.generate_speech_base64(
-                text=full_response,
-                persona=persona
-            )
-            tts_time = (datetime.now() - tts_start_time).total_seconds()
+            # Get TTS audio (wait for parallel task or generate now)
+            if tts_task is None:
+                # Short response, generate TTS now
+                tts_start_time = datetime.now()
+                logger.info("🎙️ Generating TTS audio...")
+                audio_base64 = await processor.tts.generate_speech_base64(
+                    text=full_response,
+                    persona=persona
+                )
+                tts_time = (datetime.now() - tts_start_time).total_seconds()
+            else:
+                # Wait for parallel TTS to complete
+                logger.info("⏳ Waiting for parallel TTS...")
+                audio_base64 = await tts_task
+                tts_time = (datetime.now() - tts_start_time).total_seconds()
+
             logger.info(f"⏱️ TTS generation time: {tts_time:.2f}s")
 
             # Save conversation to database
