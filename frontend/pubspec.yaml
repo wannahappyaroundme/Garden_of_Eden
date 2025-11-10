@@ -82,8 +82,8 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/wake_words/hey_adam_android.ppn
+    - assets/wake_words/hey_adam_ios.ppn
     # TODO: Add more wake word models when available
-    # - assets/wake_words/hey_adam_ios.ppn
     # - assets/wake_words/hey_eve_android.ppn
     # - assets/wake_words/hey_eve_ios.ppn
 

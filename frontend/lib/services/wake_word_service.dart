@@ -51,16 +51,19 @@ class WakeWordService {
 
   /// Get the appropriate keyword file path based on platform and persona
   Future<String> _getKeywordPath(PersonaType persona) async {
-    // Currently only supporting Android + Hey Adam
-    if (!Platform.isAndroid) {
-      throw UnsupportedError('Wake word is currently only supported on Android');
-    }
-
+    // Currently only supporting Adam persona
     if (persona != PersonaType.adam) {
       throw UnsupportedError('Wake word is currently only available for Adam persona');
     }
 
-    return 'assets/wake_words/hey_adam_android.ppn';
+    // Return platform-specific wake word model
+    if (Platform.isAndroid) {
+      return 'assets/wake_words/hey_adam_android.ppn';
+    } else if (Platform.isIOS) {
+      return 'assets/wake_words/hey_adam_ios.ppn';
+    } else {
+      throw UnsupportedError('Wake word is only supported on Android and iOS platforms');
+    }
   }
 
   /// Start listening for wake word
